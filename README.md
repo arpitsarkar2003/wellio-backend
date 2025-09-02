@@ -1,6 +1,6 @@
-# Wellio Backend
+# Wellio Backend (Dev Branch)
 
-Backend API for Wellio - Diet Tracking Application
+Backend API for Wellio - Diet Tracking Application - Development Environment
 
 ## Features
 

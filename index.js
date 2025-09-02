@@ -23,7 +23,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Welcome route
 app.get('/', (req, res) => {
   res.json({
-    message: 'Welcome to Wellio Backend! (dev Branch)',
+    message: 'Welcome to Wellio Backend! (Dev Branch)',
     version: '1.0.0',
     documentation: '/api-docs'
   });
