@@ -17,6 +17,12 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Import routes
+const authRoutes = require('./src/routes/auth');
+const userRoutes = require('./src/routes/user');
+const adminRoutes = require('./src/routes/admin');
+const policyRoutes = require('./src/routes/policy');
+
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -29,12 +35,25 @@ app.get('/', (req, res) => {
   });
 });
 
+// API v1 routes
+app.use('/v1/auth', authRoutes);
+app.use('/v1/user', userRoutes);
+app.use('/v1/admin', adminRoutes);
+app.use('/v1/policy', policyRoutes);
+
 // API v1 routes placeholder
 app.get('/v1', (req, res) => {
   res.json({
     message: 'Wellio API v1',
     version: '1.0.0',
-    documentation: '/api-docs'
+    documentation: '/api-docs',
+    endpoints: {
+      authentication: '/v1/auth',
+      userProfile: '/v1/user',
+      adminPanel: '/v1/admin',
+      policies: '/v1/policy',
+      health: '/health'
+    }
   });
 });
 
@@ -67,10 +86,23 @@ app.use((err, req, res, next) => {
 // MongoDB connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.NODE_ENV === 'production' ? process.env.MONGODB_URI : process.env.MONGODB_URI_DEV);
-    console.log(`${process.env.NODE_ENV} Connected to MongoDB successfully `);
+    const mongoURI = process.env.NODE_ENV === 'production' ? process.env.MONGODB_URI : process.env.MONGODB_URI_DEV;
+    
+    await mongoose.connect(mongoURI, {
+      // Recommended options for MongoDB connection
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+      socketTimeoutMS: 45000 // Close connections after 45 seconds of inactivity
+    });
+    
+    console.log(`✅ ${process.env.NODE_ENV || 'development'} Connected to MongoDB successfully`);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
+    console.log('\n💡 MongoDB Connection Tips:');
+    console.log('   1. Make sure MongoDB is running locally on port 27017');
+    console.log('   2. Or update MONGODB_URI_DEV in .env to use MongoDB Atlas:');
+    console.log('      MONGODB_URI_DEV=mongodb+srv://<username>:<password>@cluster.mongodb.net/wellio');
+    console.log('   3. You can also use Docker: docker run -d -p 27017:27017 mongo:latest\n');
     process.exit(1);
   }
 };

@@ -6,7 +6,7 @@ const options = {
     info: {
       title: 'Wellio API',
       version: '1.0.0',
-      description: 'Backend API for Wellio - Diet Tracking Application',
+      description: 'Backend API for Wellio - Diet Tracking Application with comprehensive authentication system',
       contact: {
         name: 'Wellio Team',
         email: 'support@wellio.com'
@@ -20,22 +20,32 @@ const options = {
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
+    tags: [
+      {
+        name: 'Authentication',
+        description: 'User authentication and authorization endpoints'
+      },
+      {
+        name: 'User Management',
+        description: 'User profile and account management'
+      },
+      {
+        name: 'Health',
+        description: 'Health check and system status'
+      }
+    ],
     components: {
       securitySchemes: {
-        bearerAuth: {
+        BearerAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
+          description: 'Enter your JWT token in the format: Bearer <token>'
         },
       },
     },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
   },
-  apis: ['./src/routes/*.js'], // paths to files containing OpenAPI definitions
+  apis: ['./src/routes/*.js', './src/controllers/*.js'], // paths to files containing OpenAPI definitions
 };
 
 const specs = swaggerJSDoc(options);
