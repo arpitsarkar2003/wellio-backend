@@ -22,6 +22,7 @@ const authRoutes = require('./src/routes/auth');
 const userRoutes = require('./src/routes/user');
 const adminRoutes = require('./src/routes/admin');
 const policyRoutes = require('./src/routes/policy');
+const companyRoutes = require('./src/routes/company');
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -40,6 +41,7 @@ app.use('/v1/auth', authRoutes);
 app.use('/v1/user', userRoutes);
 app.use('/v1/admin', adminRoutes);
 app.use('/v1/policy', policyRoutes);
+app.use('/v1/company', companyRoutes);
 
 // API v1 routes placeholder
 app.get('/v1', (req, res) => {
@@ -52,6 +54,7 @@ app.get('/v1', (req, res) => {
       userProfile: '/v1/user',
       adminPanel: '/v1/admin',
       policies: '/v1/policy',
+      company: '/v1/company',
       health: '/health'
     }
   });

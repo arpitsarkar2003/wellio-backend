@@ -134,18 +134,11 @@ const userSchema = new mongoose.Schema({
 // Note: email index is automatically created by unique: true
 // Note: googleId index is automatically created by sparse: true
 
-// Pre-save middleware to hash password using SHA-256
+// Pre-save middleware to update timestamps
 userSchema.pre('save', async function(next) {
-  // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('password')) return next();
-  
-  try {
-    // Hash password using SHA-256 as requested
-    this.password = PasswordUtils.hashPasswordSHA256(this.password);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  // Update the updatedAt timestamp
+  this.updatedAt = new Date();
+  next();
 });
 
 // Method to compare password using SHA-256
