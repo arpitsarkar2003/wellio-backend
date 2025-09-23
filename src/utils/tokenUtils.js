@@ -22,12 +22,17 @@ class TokenUtils {
   }
   
   // Generate Access Token (2F Authentication)
-  static generateAccessToken(userId) {
+  static generateAccessToken(userId, role = null) {
     const payload = {
       userId,
       type: 'access',
       timestamp: Date.now()
     };
+    
+    // Add role to payload if provided
+    if (role) {
+      payload.role = role;
+    }
     
     return jwt.sign(payload, process.env.JWT_ACCESS_SECRET, {
       expiresIn: process.env.JWT_ACCESS_EXPIRY || '1h',
@@ -37,12 +42,17 @@ class TokenUtils {
   }
   
   // Generate Refresh Token
-  static generateRefreshToken(userId) {
+  static generateRefreshToken(userId, role = null) {
     const payload = {
       userId,
       type: 'refresh',
       timestamp: Date.now()
     };
+    
+    // Add role to payload if provided
+    if (role) {
+      payload.role = role;
+    }
     
     return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
       expiresIn: process.env.JWT_REFRESH_EXPIRY || '6h',
