@@ -15,9 +15,9 @@ const options = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production' 
-          ? 'https://api.wellio.com/v1' 
-          : `http://localhost:${process.env.PORT || 3000}/v1`,
-        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+          ? 'https://wellio-backend.vercel.app/v1' 
+          : `http://localhost:${process.env.PORT || 8080}/v1`,
+        description: process.env.NODE_ENV === 'production' ? 'Production server (Vercel)' : 'Development server',
       },
     ],
     tags: [

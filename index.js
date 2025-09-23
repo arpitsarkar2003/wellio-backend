@@ -11,7 +11,16 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "style-src": ["'self'", "'unsafe-inline'"],
+      "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      "img-src": ["'self'", "data:", "*"]
+    },
+  },
+}));
 app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json());
@@ -25,7 +34,14 @@ const policyRoutes = require('./src/routes/policy');
 const companyRoutes = require('./src/routes/company');
 
 // Swagger Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "Wellio API Documentation",
+  swaggerOptions: {
+    persistAuthorization: true,
+  }
+}));
 
 // Welcome route
 app.get('/', (req, res) => {
