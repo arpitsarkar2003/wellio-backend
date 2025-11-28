@@ -184,7 +184,7 @@ GET /v1/policy/terms-conditions    # Get current terms & conditions
 
 #### User Registration & Login
 ```http
-POST /v1/auth/signup              # User registration
+POST /v1/auth/signup              # User registration (requires name, username, firstName, lastName)
 POST /v1/auth/login               # Step 1: Login (returns temp token + sends OTP)
 POST /v1/auth/verify-otp          # Step 2: Verify OTP (returns access/refresh tokens)
 POST /v1/auth/google-login        # Google OAuth login
@@ -261,6 +261,10 @@ DELETE /v1/admin/policy/:id                   # Delete policy
 ```json
 {
   "id": "string",
+  "name": "string",
+  "username": "string",
+  "firstName": "string",
+  "lastName": "string",
   "email": "string",
   "isGoogleUser": boolean,
   "isVerified": boolean,
@@ -434,6 +438,17 @@ const login = async (email, password) => {
     
     // Redirect to OTP verification page
     return { success: true, requiresOTP: true };
+  } catch (error) {
+    return { success: false, error: error.response.data.message };
+  }
+};
+
+// Signup Implementation
+const signup = async (userData) => {
+  try {
+    // userData should include: email, password, name, username, firstName, lastName
+    const response = await API.post('/v1/auth/signup', userData);
+    return { success: true, user: response.data.data.user };
   } catch (error) {
     return { success: false, error: error.response.data.message };
   }

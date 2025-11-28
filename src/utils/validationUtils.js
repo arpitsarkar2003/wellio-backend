@@ -4,7 +4,7 @@ const Joi = require('joi');
  * Validation schemas for authentication endpoints
  */
 class ValidationUtils {
-  
+
   // Email validation schema
   static emailSchema = Joi.string()
     .email({ tlds: { allow: false } })
@@ -13,7 +13,7 @@ class ValidationUtils {
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required'
     });
-  
+
   // Password validation schema
   static passwordSchema = Joi.string()
     .min(6)
@@ -24,7 +24,7 @@ class ValidationUtils {
       'string.max': 'Password must not exceed 128 characters',
       'any.required': 'Password is required'
     });
-  
+
   // OTP validation schema
   static otpSchema = Joi.string()
     .pattern(/^\d{6}$/)
@@ -33,78 +33,82 @@ class ValidationUtils {
       'string.pattern.base': 'OTP must be a 6-digit number',
       'any.required': 'OTP is required'
     });
-  
+
   // Token validation schema
   static tokenSchema = Joi.string()
     .required()
     .messages({
       'any.required': 'Token is required'
     });
-  
+
   // Google token validation schema
   static googleTokenSchema = Joi.string()
     .required()
     .messages({
       'any.required': 'Google token is required'
     });
-  
+
   // Signup validation
   static validateSignup(data) {
     const schema = Joi.object({
       email: this.emailSchema,
-      password: this.passwordSchema
+      password: this.passwordSchema,
+      name: Joi.string().required(),
+      username: Joi.string().required(),
+      firstName: Joi.string().required(),
+      lastName: Joi.string().required()
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Login validation
   static validateLogin(data) {
     const schema = Joi.object({
       email: this.emailSchema,
       password: this.passwordSchema
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // OTP verification validation
   static validateOTPVerification(data) {
     const schema = Joi.object({
       token: this.tokenSchema,
       otp: this.otpSchema
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Google login validation
   static validateGoogleLogin(data) {
     const schema = Joi.object({
       googleToken: this.googleTokenSchema
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Logout validation
   static validateLogout(data) {
     const schema = Joi.object({
       token: this.tokenSchema
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Format validation errors
   static formatValidationErrors(error) {
     if (!error || !error.details) {
       return ['Validation failed'];
     }
-    
+
     return error.details.map(detail => detail.message);
   }
-  
+
   // Sanitize email
   static sanitizeEmail(email) {
     if (!email || typeof email !== 'string') {
@@ -112,25 +116,25 @@ class ValidationUtils {
     }
     return email.toLowerCase().trim();
   }
-  
+
   // Validate request body
   static validateRequestBody(body, requiredFields = []) {
     const errors = [];
-    
+
     if (!body || typeof body !== 'object') {
       errors.push('Request body is required');
       return errors;
     }
-    
+
     requiredFields.forEach(field => {
       if (!body[field]) {
         errors.push(`${field} is required`);
       }
     });
-    
+
     return errors;
   }
-  
+
   // Profile update validation
   static validateProfileUpdate(data) {
     const schema = Joi.object({
@@ -162,10 +166,10 @@ class ValidationUtils {
         heightUnit: Joi.string().valid('cm', 'ft').optional()
       }).optional()
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Admin login validation
   static validateAdminLogin(data) {
     const schema = Joi.object({
@@ -176,10 +180,10 @@ class ValidationUtils {
       }),
       password: this.passwordSchema
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Admin creation validation
   static validateAdminCreation(data) {
     const schema = Joi.object({
@@ -210,10 +214,10 @@ class ValidationUtils {
           'any.required': 'Security answer is required'
         })
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Password change validation
   static validatePasswordChange(data) {
     const schema = Joi.object({
@@ -230,10 +234,10 @@ class ValidationUtils {
           'any.required': 'New password is required'
         })
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Password recovery validation
   static validatePasswordRecovery(data) {
     const schema = Joi.object({
@@ -253,10 +257,10 @@ class ValidationUtils {
           'any.required': 'New password is required'
         })
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Username validation
   static validateUsername(data) {
     const schema = Joi.object({
@@ -264,19 +268,19 @@ class ValidationUtils {
         'any.required': 'Username is required'
       })
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Email validation
   static validateEmail(data) {
     const schema = Joi.object({
       email: this.emailSchema
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Password reset validation
   static validatePasswordReset(data) {
     const schema = Joi.object({
@@ -285,10 +289,10 @@ class ValidationUtils {
       }),
       newPassword: this.passwordSchema
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Company data validation
   static validateCompanyData(data) {
     const schema = Joi.object({
@@ -339,10 +343,10 @@ class ValidationUtils {
       establishedYear: Joi.number().integer().min(1800).max(new Date().getFullYear()).optional(),
       industry: Joi.string().max(100).allow('').optional()
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Policy data validation
   static validatePolicyData(data) {
     const schema = Joi.object({
@@ -359,10 +363,10 @@ class ValidationUtils {
       metaDescription: Joi.string().max(300).allow('').optional(),
       keywords: Joi.array().items(Joi.string().max(50)).optional()
     });
-    
+
     return schema.validate(data, { abortEarly: false });
   }
-  
+
   // Sanitize input
   static sanitizeInput(input) {
     if (!input || typeof input !== 'string') {
@@ -370,11 +374,11 @@ class ValidationUtils {
     }
     return input.trim();
   }
-  
+
   // Common response validation
   static createValidationResponse(error) {
     const errors = this.formatValidationErrors(error);
-    
+
     return {
       status: 'error',
       message: 'Validation failed',

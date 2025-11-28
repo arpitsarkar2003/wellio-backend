@@ -31,7 +31,11 @@ Create these variables in your Postman environment:
 ```json
 {
   "email": "user@example.com",
-  "password": "mypassword123"
+  "password": "mypassword123",
+  "name": "John Doe",
+  "username": "johndoe",
+  "firstName": "John",
+  "lastName": "Doe"
 }
 ```
 **Expected Response:** `201 Created`
@@ -126,6 +130,33 @@ if (pm.response.code === 200) {
 {
   "Authorization": "Bearer {{access_token}}",
   "Content-Type": "application/json"
+}
+```
+**Expected Response:** `200 OK`
+**Response Body Example:**
+```json
+{
+  "status": "success",
+  "message": "Profile retrieved successfully",
+  "data": {
+    "id": "60d21b4667d0d8992e610c85",
+    "name": "John Doe",
+    "username": "johndoe",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "user@example.com",
+    "isGoogleUser": false,
+    "isVerified": true,
+    "createdAt": "2023-06-22T10:00:00.000Z",
+    "lastLogin": "2023-06-22T10:05:00.000Z",
+    "profile": {
+      "phoneNumber": "+1234567890",
+      "address": {
+        "street1": "123 Main St",
+        "city": "New York"
+      }
+    }
+  }
 }
 ```
 

@@ -15,6 +15,24 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters long']
   },
+  name: {
+    type: String,
+    trim: true
+  },
+  username: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true
+  },
+  firstName: {
+    type: String,
+    trim: true
+  },
+  lastName: {
+    type: String,
+    trim: true
+  },
   isGoogleUser: {
     type: Boolean,
     default: false
@@ -135,40 +153,40 @@ const userSchema = new mongoose.Schema({
 // Note: googleId index is automatically created by sparse: true
 
 // Pre-save middleware to update timestamps
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   // Update the updatedAt timestamp
   this.updatedAt = new Date();
   next();
 });
 
 // Method to compare password using SHA-256
-userSchema.methods.comparePassword = function(candidatePassword) {
+userSchema.methods.comparePassword = function (candidatePassword) {
   return PasswordUtils.verifyPasswordSHA256(candidatePassword, this.password);
 };
 
 // Method to check if token is blacklisted
-userSchema.methods.isTokenBlacklisted = function(token) {
+userSchema.methods.isTokenBlacklisted = function (token) {
   const blacklistedToken = this.blacklistedTokens.find(bt => bt.token === token);
   if (!blacklistedToken) return false;
-  
+
   // Clean up expired tokens
   if (blacklistedToken.expiresAt < new Date()) {
     this.blacklistedTokens = this.blacklistedTokens.filter(bt => bt.expiresAt >= new Date());
     this.save();
     return false;
   }
-  
+
   return true;
 };
 
 // Method to blacklist a token
-userSchema.methods.blacklistToken = function(token, expiresAt) {
+userSchema.methods.blacklistToken = function (token, expiresAt) {
   this.blacklistedTokens.push({ token, expiresAt });
   return this.save();
 };
 
 // Method to clear expired OTP
-userSchema.methods.clearExpiredOTP = function() {
+userSchema.methods.clearExpiredOTP = function () {
   if (this.currentOTP && this.currentOTP.expiresAt < new Date()) {
     this.currentOTP = undefined;
     return this.save();
@@ -177,7 +195,7 @@ userSchema.methods.clearExpiredOTP = function() {
 };
 
 // Method to clear expired temp auth token
-userSchema.methods.clearExpiredTempToken = function() {
+userSchema.methods.clearExpiredTempToken = function () {
   if (this.tempAuthToken && this.tempAuthToken.expiresAt < new Date()) {
     this.tempAuthToken = undefined;
     return this.save();
@@ -186,30 +204,34 @@ userSchema.methods.clearExpiredTempToken = function() {
 };
 
 // Method to generate password reset token
-userSchema.methods.generatePasswordResetToken = function() {
+userSchema.methods.generatePasswordResetToken = function () {
   const crypto = require('crypto');
   const resetToken = crypto.randomBytes(32).toString('hex');
-  
+
   this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
   this.resetPasswordExpires = Date.now() + 30 * 60 * 1000; // 30 minutes
-  
+
   return resetToken;
 };
 
 // Static method to find user by email
-userSchema.statics.findByEmail = function(email) {
+userSchema.statics.findByEmail = function (email) {
   return this.findOne({ email: email.toLowerCase().trim() });
 };
 
 // Static method to find user by Google ID
-userSchema.statics.findByGoogleId = function(googleId) {
+userSchema.statics.findByGoogleId = function (googleId) {
   return this.findOne({ googleId });
 };
 
 // Virtual for user's full profile (excluding sensitive data)
-userSchema.virtual('fullProfile').get(function() {
+userSchema.virtual('fullProfile').get(function () {
   return {
     id: this._id,
+    name: this.name,
+    username: this.username,
+    firstName: this.firstName,
+    lastName: this.lastName,
     email: this.email,
     isGoogleUser: this.isGoogleUser,
     isVerified: this.isVerified,
@@ -220,7 +242,7 @@ userSchema.virtual('fullProfile').get(function() {
 });
 
 // Virtual for basic profile (for tokens and auth responses)
-userSchema.virtual('basicProfile').get(function() {
+userSchema.virtual('basicProfile').get(function () {
   return {
     id: this._id,
     email: this.email,
@@ -232,7 +254,7 @@ userSchema.virtual('basicProfile').get(function() {
 // Ensure virtual fields are serialized
 userSchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc, ret) {
+  transform: function (doc, ret) {
     delete ret.password;
     delete ret.currentOTP;
     delete ret.tempAuthToken;
