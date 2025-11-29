@@ -21,7 +21,10 @@ app.use(helmet({
     },
   },
 }));
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081'],
+  credentials: true,
+}));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -106,14 +109,14 @@ app.use((err, req, res, next) => {
 const connectDB = async () => {
   try {
     const mongoURI = process.env.NODE_ENV === 'production' ? process.env.MONGODB_URI : process.env.MONGODB_URI_DEV;
-    
+
     await mongoose.connect(mongoURI, {
       // Recommended options for MongoDB connection
       maxPoolSize: 10, // Maintain up to 10 socket connections
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
       socketTimeoutMS: 45000 // Close connections after 45 seconds of inactivity
     });
-    
+
     console.log(`✅ ${process.env.NODE_ENV || 'development'} Connected to MongoDB successfully`);
   } catch (error) {
     console.error('❌ MongoDB connection error:', error.message);
@@ -129,7 +132,7 @@ const connectDB = async () => {
 // Start server
 const startServer = async () => {
   await connectDB();
-  
+
   app.listen(PORT, () => {
     console.log(`🚀 Wellio Backend Server running on port ${PORT}`);
     console.log(`📚 API Documentation available at http://localhost:${PORT}/api-docs`);

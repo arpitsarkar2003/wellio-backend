@@ -236,6 +236,7 @@ userSchema.virtual('fullProfile').get(function () {
     isGoogleUser: this.isGoogleUser,
     isVerified: this.isVerified,
     createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
     lastLogin: this.lastLogin,
     profile: this.profile || {}
   };

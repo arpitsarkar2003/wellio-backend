@@ -208,7 +208,7 @@ class AuthController {
         expiresIn: process.env.JWT_ACCESS_EXPIRY || '1h'
       };
 
-      return ResponseUtils.authSuccess(res, 'Authentication successful', tokens, user.profile);
+      return ResponseUtils.authSuccess(res, 'Authentication successful', tokens, user.fullProfile);
 
     } catch (error) {
       console.error('OTP verification error:', error.message);
