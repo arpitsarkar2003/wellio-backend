@@ -22,7 +22,11 @@ app.use(helmet({
   },
 }));
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081'],
+  origin: [
+    'http://localhost:3000',
+    'https://wellio-frontend.vercel.app',
+    'http://localhost:8081'
+  ],
   credentials: true,
 }));
 app.use(morgan('combined'));
