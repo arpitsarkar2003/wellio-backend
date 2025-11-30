@@ -52,65 +52,54 @@ class UserController {
         return ResponseUtils.notFound(res, 'User not found');
       }
 
-      // Prepare profile update object
-      const profileUpdate = {};
+      // Ensure profile object exists
+      if (!user.profile) {
+        user.profile = {};
+      }
 
       // Phone number
       if (updateData.phoneNumber !== undefined) {
-        profileUpdate['profile.phoneNumber'] = updateData.phoneNumber;
+        user.profile.phoneNumber = updateData.phoneNumber;
       }
 
       // Address fields
       if (updateData.address) {
-        if (updateData.address.street1 !== undefined) {
-          profileUpdate['profile.address.street1'] = updateData.address.street1;
-        }
-        if (updateData.address.street2 !== undefined) {
-          profileUpdate['profile.address.street2'] = updateData.address.street2;
-        }
-        if (updateData.address.lane !== undefined) {
-          profileUpdate['profile.address.lane'] = updateData.address.lane;
-        }
-        if (updateData.address.city !== undefined) {
-          profileUpdate['profile.address.city'] = updateData.address.city;
-        }
-        if (updateData.address.state !== undefined) {
-          profileUpdate['profile.address.state'] = updateData.address.state;
-        }
-        if (updateData.address.pincode !== undefined) {
-          profileUpdate['profile.address.pincode'] = updateData.address.pincode;
-        }
+        if (!user.profile.address) user.profile.address = {};
+
+        if (updateData.address.street1 !== undefined) user.profile.address.street1 = updateData.address.street1;
+        if (updateData.address.street2 !== undefined) user.profile.address.street2 = updateData.address.street2;
+        if (updateData.address.lane !== undefined) user.profile.address.lane = updateData.address.lane;
+        if (updateData.address.city !== undefined) user.profile.address.city = updateData.address.city;
+        if (updateData.address.state !== undefined) user.profile.address.state = updateData.address.state;
+        if (updateData.address.pincode !== undefined) user.profile.address.pincode = updateData.address.pincode;
       }
 
       // Physical information
       if (updateData.physicalInfo) {
-        if (updateData.physicalInfo.currentWeight !== undefined) {
-          profileUpdate['profile.physicalInfo.currentWeight'] = updateData.physicalInfo.currentWeight;
-        }
-        if (updateData.physicalInfo.currentHeight !== undefined) {
-          profileUpdate['profile.physicalInfo.currentHeight'] = updateData.physicalInfo.currentHeight;
-        }
-        if (updateData.physicalInfo.weightUnit !== undefined) {
-          profileUpdate['profile.physicalInfo.weightUnit'] = updateData.physicalInfo.weightUnit;
-        }
-        if (updateData.physicalInfo.heightUnit !== undefined) {
-          profileUpdate['profile.physicalInfo.heightUnit'] = updateData.physicalInfo.heightUnit;
-        }
+        if (!user.profile.physicalInfo) user.profile.physicalInfo = {};
+
+        if (updateData.physicalInfo.currentWeight !== undefined) user.profile.physicalInfo.currentWeight = updateData.physicalInfo.currentWeight;
+        if (updateData.physicalInfo.currentHeight !== undefined) user.profile.physicalInfo.currentHeight = updateData.physicalInfo.currentHeight;
+        if (updateData.physicalInfo.weightUnit !== undefined) user.profile.physicalInfo.weightUnit = updateData.physicalInfo.weightUnit;
+        if (updateData.physicalInfo.heightUnit !== undefined) user.profile.physicalInfo.heightUnit = updateData.physicalInfo.heightUnit;
       }
 
-      // Update user profile
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        { $set: profileUpdate },
-        { new: true, runValidators: true }
-      ).select('-password -blacklistedTokens -currentOTP -tempAuthToken -resetPasswordToken -resetPasswordExpires');
+      // Check if profile is completed
+      // Criteria: Phone number and Physical Info (weight & height) are present
+      const hasPhoneNumber = !!user.profile.phoneNumber;
+      const hasPhysicalInfo = user.profile.physicalInfo &&
+        user.profile.physicalInfo.currentWeight &&
+        user.profile.physicalInfo.currentHeight;
 
-      if (!updatedUser) {
-        return ResponseUtils.internalError(res, 'Failed to update profile');
+      if (hasPhoneNumber && hasPhysicalInfo) {
+        user.isProfileCompleted = true;
       }
+
+      // Save user
+      await user.save();
 
       return ResponseUtils.success(res, 'Profile updated successfully', {
-        user: updatedUser.fullProfile
+        user: user.fullProfile
       });
 
     } catch (error) {

@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  isProfileCompleted: {
+    type: Boolean,
+    default: false
+  },
   // OTP related fields
   currentOTP: {
     code: String,
@@ -238,6 +242,7 @@ userSchema.virtual('fullProfile').get(function () {
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
     lastLogin: this.lastLogin,
+    isProfileCompleted: this.isProfileCompleted,
     profile: this.profile || {}
   };
 });
@@ -248,7 +253,8 @@ userSchema.virtual('basicProfile').get(function () {
     id: this._id,
     email: this.email,
     isGoogleUser: this.isGoogleUser,
-    isVerified: this.isVerified
+    isVerified: this.isVerified,
+    isProfileCompleted: this.isProfileCompleted
   };
 });
 
