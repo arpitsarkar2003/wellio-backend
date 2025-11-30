@@ -39,6 +39,7 @@ const userRoutes = require('./src/routes/user');
 const adminRoutes = require('./src/routes/admin');
 const policyRoutes = require('./src/routes/policy');
 const companyRoutes = require('./src/routes/company');
+const dietPlanRoutes = require('./src/routes/dietPlan');
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve);
@@ -65,6 +66,7 @@ app.use('/v1/user', userRoutes);
 app.use('/v1/admin', adminRoutes);
 app.use('/v1/policy', policyRoutes);
 app.use('/v1/company', companyRoutes);
+app.use('/v1/diet-plans', dietPlanRoutes);
 
 // API v1 routes placeholder
 app.get('/v1', (req, res) => {
@@ -78,6 +80,7 @@ app.get('/v1', (req, res) => {
       adminPanel: '/v1/admin',
       policies: '/v1/policy',
       company: '/v1/company',
+      dietPlans: '/v1/diet-plans',
       health: '/health'
     }
   });

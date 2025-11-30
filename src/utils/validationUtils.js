@@ -367,6 +367,127 @@ class ValidationUtils {
     return schema.validate(data, { abortEarly: false });
   }
 
+  // Diet Plan validation
+  static validateDietPlan(data) {
+    const foodEntrySchema = Joi.object({
+      name: Joi.string().required().messages({
+        'any.required': 'Food name is required'
+      }),
+      estimatedCalories: Joi.number().min(0).required().messages({
+        'number.min': 'Calories cannot be negative',
+        'any.required': 'Estimated calories are required'
+      }),
+      notes: Joi.string().allow('', null).optional()
+    });
+
+    const mealSchema = Joi.object({
+      mealName: Joi.string().required().messages({
+        'any.required': 'Meal name is required'
+      }),
+      time: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required().messages({
+        'string.pattern.base': 'Time must be in HH:MM format',
+        'any.required': 'Meal time is required'
+      }),
+      items: Joi.array().items(foodEntrySchema).optional(),
+      preparationNotes: Joi.string().allow('', null).optional()
+    });
+
+    const daySchema = Joi.object({
+      day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required().messages({
+        'any.only': 'Day must be a valid day of the week',
+        'any.required': 'Day name is required'
+      }),
+      meals: Joi.array().items(mealSchema).optional()
+    });
+
+    const schema = Joi.object({
+      weekSchedule: Joi.array().items(daySchema).optional(),
+      isActive: Joi.boolean().optional()
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+  // Diet Plan Meal validation
+  static validateDietPlanMeal(data) {
+    const foodEntrySchema = Joi.object({
+      name: Joi.string().required().messages({
+        'any.required': 'Food name is required'
+      }),
+      estimatedCalories: Joi.number().min(0).required().messages({
+        'number.min': 'Calories cannot be negative',
+        'any.required': 'Estimated calories are required'
+      }),
+      notes: Joi.string().allow('', null).optional()
+    });
+
+    const schema = Joi.object({
+      mealName: Joi.string().optional(),
+      time: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().messages({
+        'string.pattern.base': 'Time must be in HH:MM format'
+      }),
+      items: Joi.array().items(foodEntrySchema).optional(),
+      preparationNotes: Joi.string().allow('', null).optional()
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+
+
+  // Diet Template validation
+  static validateDietTemplate(data) {
+    const foodEntrySchema = Joi.object({
+      name: Joi.string().required().messages({
+        'any.required': 'Food name is required'
+      }),
+      estimatedCalories: Joi.number().min(0).required().messages({
+        'number.min': 'Calories cannot be negative',
+        'any.required': 'Estimated calories are required'
+      }),
+      notes: Joi.string().allow('', null).optional()
+    });
+
+    const mealSchema = Joi.object({
+      mealName: Joi.string().required().messages({
+        'any.required': 'Meal name is required'
+      }),
+      time: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required().messages({
+        'string.pattern.base': 'Time must be in HH:MM format',
+        'any.required': 'Meal time is required'
+      }),
+      items: Joi.array().items(foodEntrySchema).optional(),
+      preparationNotes: Joi.string().allow('', null).optional()
+    });
+
+    const daySchema = Joi.object({
+      day: Joi.string().valid('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday').required().messages({
+        'any.only': 'Day must be a valid day of the week',
+        'any.required': 'Day name is required'
+      }),
+      meals: Joi.array().items(mealSchema).optional()
+    });
+
+    const schema = Joi.object({
+      name: Joi.string().required().messages({
+        'any.required': 'Template name is required'
+      }),
+      description: Joi.string().allow('', null).optional(),
+      goal: Joi.string().valid('weight_loss', 'muscle_gain', 'balanced', 'keto', 'vegan').required().messages({
+        'any.only': 'Goal must be one of: weight_loss, muscle_gain, balanced, keto, vegan',
+        'any.required': 'Goal is required'
+      }),
+      weekSchedule: Joi.array().items(daySchema).min(7).max(7).required().messages({
+        'array.min': 'Week schedule must contain exactly 7 days',
+        'array.max': 'Week schedule must contain exactly 7 days',
+        'any.required': 'Week schedule is required'
+      }),
+      isDefault: Joi.boolean().optional()
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
   // Sanitize input
   static sanitizeInput(input) {
     if (!input || typeof input !== 'string') {
