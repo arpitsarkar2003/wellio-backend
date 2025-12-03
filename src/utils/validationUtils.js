@@ -91,6 +91,20 @@ class ValidationUtils {
     return schema.validate(data, { abortEarly: false });
   }
 
+  // Phone token verification validation
+  static validatePhoneTokenVerification(data) {
+    const schema = Joi.object({
+      idToken: Joi.string()
+        .required()
+        .messages({
+          'any.required': 'Firebase ID token is required',
+          'string.empty': 'Firebase ID token cannot be empty'
+        })
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
   // Logout validation
   static validateLogout(data) {
     const schema = Joi.object({

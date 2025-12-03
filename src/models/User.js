@@ -50,6 +50,17 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // Phone verification fields
+  phoneNumber: {
+    type: String,
+    trim: true,
+    sparse: true,
+    match: [/^\+?[1-9]\d{1,14}$/, 'Please enter a valid phone number']
+  },
+  isPhoneVerified: {
+    type: Boolean,
+    default: false
+  },
   // OTP related fields
   currentOTP: {
     code: String,
@@ -239,6 +250,8 @@ userSchema.virtual('fullProfile').get(function () {
     email: this.email,
     isGoogleUser: this.isGoogleUser,
     isVerified: this.isVerified,
+    phoneNumber: this.phoneNumber,
+    isPhoneVerified: this.isPhoneVerified,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
     lastLogin: this.lastLogin,
@@ -254,6 +267,8 @@ userSchema.virtual('basicProfile').get(function () {
     email: this.email,
     isGoogleUser: this.isGoogleUser,
     isVerified: this.isVerified,
+    phoneNumber: this.phoneNumber,
+    isPhoneVerified: this.isPhoneVerified,
     isProfileCompleted: this.isProfileCompleted
   };
 });

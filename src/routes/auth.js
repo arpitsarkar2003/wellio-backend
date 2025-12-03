@@ -30,6 +30,13 @@ const router = express.Router();
  *         isVerified:
  *           type: boolean
  *           description: Whether user email is verified
+ *         phoneNumber:
+ *           type: string
+ *           description: User phone number
+ *           example: "+1234567890"
+ *         isPhoneVerified:
+ *           type: boolean
+ *           description: Whether user phone number is verified
  *         createdAt:
  *           type: string
  *           format: date-time
@@ -257,6 +264,69 @@ router.post('/login', rateLimiter.loginRateLimit(), AuthController.login);
  *               $ref: '#/components/schemas/ApiResponse'
  */
 router.post('/verify-otp', AuthController.verifyOTP);
+
+/**
+ * @swagger
+ * /auth/verify-phone-token:
+ *   post:
+ *     summary: Verify Firebase phone authentication token
+ *     tags: [Authentication]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idToken
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Firebase ID token from phone authentication
+ *                 example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2NzAyNDI3..."
+ *     responses:
+ *       200:
+ *         description: Phone number verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         user:
+ *                           $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation error or phone number not found in token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       401:
+ *         description: Invalid, expired, or revoked Firebase ID token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       500:
+ *         description: Phone verification service not configured or internal error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ */
+router.post('/verify-phone-token', AuthMiddleware.verifyAccessToken, AuthController.verifyPhoneToken);
 
 /**
  * @swagger

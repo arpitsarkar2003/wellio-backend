@@ -371,3 +371,4 @@ The service handles various error scenarios:
 - The `lastUsed` timestamp is updated when notifications are sent
 - Partial tokens are returned in API responses for security
 
+

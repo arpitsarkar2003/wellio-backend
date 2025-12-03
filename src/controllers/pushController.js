@@ -341,6 +341,10 @@ class PushController {
       await pushToken.deactivate();
 
       return ResponseUtils.success(res, 'Push token deactivated successfully');
+
+    } catch (error) {
+      console.error('Delete push token error:', error.message);
+      return ResponseUtils.internalError(res, 'Failed to delete push token');
     }
   }
 
@@ -408,13 +412,9 @@ class PushController {
       return ResponseUtils.internalError(res, 'Failed to retrieve notification history');
     }
   }
-
-    } catch (error) {
-      console.error('Delete push token error:', error.message);
-      return ResponseUtils.internalError(res, 'Failed to delete push token');
-    }
-  }
 }
+
+module.exports = PushController;
 
 module.exports = PushController;
 

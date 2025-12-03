@@ -169,11 +169,9 @@ router.post('/save-push-token', authMiddleware.requireAuth, PushController.saveP
  *                       type: string
  *                       description: Notification category
  *       400:
- *         description: Validation error
+ *         description: Validation error or invalid push token - token has been deactivated
  *       401:
  *         description: Unauthorized
- *       400:
- *         description: Invalid push token - token has been deactivated
  *       404:
  *         description: No active push tokens found for user
  *       429:

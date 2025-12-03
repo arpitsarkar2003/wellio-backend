@@ -98,3 +98,4 @@ notificationHistorySchema.statics.getStatsByUser = function (userId, startDate, 
 
 module.exports = mongoose.model('NotificationHistory', notificationHistorySchema);
 
+

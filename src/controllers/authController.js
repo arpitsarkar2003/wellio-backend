@@ -4,6 +4,7 @@ const OTPUtils = require('../utils/otpUtils');
 const EmailUtils = require('../utils/emailUtils');
 const PasswordUtils = require('../utils/passwordUtils');
 const GoogleAuthUtils = require('../utils/googleAuth');
+const FirebaseAdmin = require('../utils/firebaseAdmin');
 const ValidationUtils = require('../utils/validationUtils');
 const ResponseUtils = require('../utils/responseUtils');
 
@@ -398,6 +399,79 @@ class AuthController {
     } catch (error) {
       console.error('Refresh token error:', error.message);
       return ResponseUtils.internalError(res, 'Token refresh failed');
+    }
+  }
+
+  /**
+   * Verify Phone Token - POST /verify-phone-token
+   * Verifies Firebase phone authentication token and updates user record
+   */
+  static async verifyPhoneToken(req, res) {
+    try {
+      // Validate request data
+      const { error } = ValidationUtils.validatePhoneTokenVerification(req.body);
+      if (error) {
+        return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
+      }
+
+      const { idToken } = req.body;
+
+      // Verify Firebase ID token
+      let decodedToken;
+      try {
+        decodedToken = await FirebaseAdmin.verifyIdToken(idToken);
+      } catch (firebaseError) {
+        // Handle expired token specifically
+        if (firebaseError.message.includes('expired')) {
+          return ResponseUtils.error(res, 'Firebase ID token has expired. Please request a new verification code.', 401);
+        }
+        // Handle other Firebase errors
+        return ResponseUtils.error(res, firebaseError.message || 'Invalid Firebase ID token', 401);
+      }
+
+      // Extract phone number from decoded token
+      const phoneNumber = FirebaseAdmin.extractPhoneNumber(decodedToken);
+      
+      if (!phoneNumber) {
+        return ResponseUtils.error(res, 'Phone number not found in Firebase token', 400);
+      }
+
+      // Find user by Firebase UID or by authenticated user (if token contains user info)
+      // For phone verification, we typically need the user to be authenticated first
+      // or we match by phone number if user already exists
+      let user;
+
+      // Check if user is authenticated (from middleware)
+      if (req.user && req.user.id) {
+        user = await User.findById(req.user.id);
+      } else {
+        // Try to find user by phone number
+        user = await User.findOne({ phoneNumber });
+      }
+
+      if (!user) {
+        return ResponseUtils.notFound(res, 'User not found. Please ensure you are logged in or have an account.');
+      }
+
+      // Update user record
+      user.phoneNumber = phoneNumber;
+      user.isPhoneVerified = true;
+      await user.save();
+
+      // Return updated user profile
+      return ResponseUtils.success(res, 'Phone number verified successfully', {
+        user: user.fullProfile
+      });
+
+    } catch (error) {
+      console.error('Phone token verification error:', error.message);
+      
+      // Handle Firebase initialization errors
+      if (error.message.includes('Firebase service account not configured')) {
+        return ResponseUtils.error(res, 'Phone verification service is not configured', 500);
+      }
+
+      return ResponseUtils.internalError(res, 'Phone verification failed');
     }
   }
 
