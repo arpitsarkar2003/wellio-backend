@@ -30,6 +30,10 @@ const options = {
         description: 'User profile and account management'
       },
       {
+        name: 'Push Notifications',
+        description: 'Push notification token management and sending notifications'
+      },
+      {
         name: 'Health',
         description: 'Health check and system status'
       }
@@ -37,6 +41,12 @@ const options = {
     components: {
       securitySchemes: {
         BearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Enter your JWT token in the format: Bearer <token>'
+        },
+        bearerAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',

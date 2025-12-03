@@ -22,6 +22,39 @@ class RateLimiter {
     return (req, res, next) => next();
   }
 
+  // Rate limit for push notifications
+  pushNotificationRateLimit(maxAttempts = 10, windowMs = 60 * 1000) {
+    return (req, res, next) => {
+      const userId = req.user?.id || req.ip;
+      const key = `push_notification:${userId}`;
+      const now = Date.now();
+      const windowStart = now - windowMs;
+
+      // Get existing attempts for this user
+      let attempts = this.attempts.get(key) || [];
+      
+      // Filter out attempts outside the time window
+      attempts = attempts.filter(timestamp => timestamp > windowStart);
+
+      // Check if limit exceeded
+      if (attempts.length >= maxAttempts) {
+        return res.status(429).json({
+          status: 'error',
+          message: `Too many notification requests. Maximum ${maxAttempts} requests per ${windowMs / 1000} seconds allowed.`,
+          errors: null,
+          data: null,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Add current attempt
+      attempts.push(now);
+      this.attempts.set(key, attempts);
+
+      next();
+    };
+  }
+
   // Clear expired entries periodically
   cleanup() {
     const now = Date.now();
