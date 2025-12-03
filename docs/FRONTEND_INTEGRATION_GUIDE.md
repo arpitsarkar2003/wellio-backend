@@ -24,6 +24,8 @@ The **Wellio Diet Tracker Backend** is a comprehensive Node.js/Express REST API 
 - **Company/Branding Management** with logo upload capabilities
 - **Policy Management** for privacy policy and terms & conditions
 - **User Profile Management** with diet/health tracking data
+- **Water Intake Tracking** with daily goals and progress
+- **Supplements Schedule Management** with reminder notifications
 - **Email Integration** for OTP and notifications
 - **Image Upload** via ImgBB API integration
 
@@ -40,6 +42,8 @@ The **Wellio Diet Tracker Backend** is a comprehensive Node.js/Express REST API 
 ✅ **Company branding management** with logo uploads  
 ✅ **Dynamic policy management** (Privacy Policy, Terms)  
 ✅ **Comprehensive user profiles** with physical metrics  
+✅ **Water intake tracking** with daily goals and progress monitoring  
+✅ **Supplements schedule management** with automated push notifications  
 ✅ **Email notifications** and OTP delivery  
 ✅ **Public API endpoints** for company info and policies  
 ✅ **Admin session management** and security features  
@@ -213,6 +217,208 @@ POST   /v1/user/reset-password    # Reset password with token
 DELETE /v1/user/account           # Delete account with password confirmation
 ```
 
+### 💧 Water Tracker Endpoints
+
+#### Water Intake Management
+```http
+POST /v1/water/add                # Add water intake entry
+GET  /v1/water/daily?date=YYYY-MM-DD  # Get daily water intake data
+PUT  /v1/water/goal               # Update daily water goal
+```
+
+**Request Examples:**
+
+**Add Water Intake:**
+```json
+POST /v1/water/add
+{
+  "amount": 250  // Amount in ml
+}
+```
+
+**Get Daily Water Intake:**
+```http
+GET /v1/water/daily?date=2024-01-15
+// If date is omitted, returns today's data
+```
+
+**Update Water Goal:**
+```json
+PUT /v1/water/goal
+{
+  "dailyGoal": 2000  // Daily goal in ml (default: 2000)
+}
+```
+
+**Response Examples:**
+
+**Daily Water Intake Response:**
+```json
+{
+  "status": "success",
+  "message": "Daily water intake retrieved successfully",
+  "data": {
+    "goal": 2000,
+    "total": 1250,
+    "entries": [
+      {
+        "id": "65a1b2c3d4e5f6g7h8i9j0k1",
+        "amount": 250,
+        "timestamp": "2024-01-15T08:30:00.000Z",
+        "createdAt": "2024-01-15T08:30:00.000Z"
+      },
+      {
+        "id": "65a1b2c3d4e5f6g7h8i9j0k2",
+        "amount": 500,
+        "timestamp": "2024-01-15T12:00:00.000Z",
+        "createdAt": "2024-01-15T12:00:00.000Z"
+      },
+      {
+        "id": "65a1b2c3d4e5f6g7h8i9j0k3",
+        "amount": 500,
+        "timestamp": "2024-01-15T15:45:00.000Z",
+        "createdAt": "2024-01-15T15:45:00.000Z"
+      }
+    ]
+  },
+  "timestamp": "2024-01-15T16:00:00.000Z"
+}
+```
+
+### 💊 Supplements Tracker Endpoints
+
+#### Supplement Schedule Management
+```http
+POST   /v1/supplements            # Create supplement schedule
+GET    /v1/supplements            # Get all supplements for user
+PUT    /v1/supplements/:id        # Update supplement schedule
+DELETE /v1/supplements/:id         # Delete supplement schedule
+```
+
+#### Supplement Logging
+```http
+POST /v1/supplements/log           # Log supplement intake
+GET  /v1/supplements/logs?month=YYYY-MM  # Get monthly supplement logs
+```
+
+**Request Examples:**
+
+**Create Supplement Schedule:**
+```json
+POST /v1/supplements
+{
+  "name": "Vitamin D",
+  "time": "09:00",  // HH:MM format
+  "days": ["Mon", "Wed", "Fri"],  // Day abbreviations
+  "notes": "Take with breakfast"  // Optional
+}
+```
+
+**Update Supplement:**
+```json
+PUT /v1/supplements/:id
+{
+  "name": "Vitamin D3",
+  "time": "10:00",
+  "days": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  "notes": "Updated dosage"
+}
+```
+
+**Log Supplement Intake:**
+```json
+POST /v1/supplements/log
+{
+  "supplementId": "65a1b2c3d4e5f6g7h8i9j0k1",
+  "status": "taken"  // or "skipped"
+}
+```
+
+**Get Monthly Logs:**
+```http
+GET /v1/supplements/logs?month=2024-01
+// If month is omitted, returns current month's logs
+```
+
+**Response Examples:**
+
+**Get All Supplements:**
+```json
+{
+  "status": "success",
+  "message": "Supplements retrieved successfully",
+  "data": {
+    "supplements": [
+      {
+        "id": "65a1b2c3d4e5f6g7h8i9j0k1",
+        "name": "Vitamin D",
+        "time": "09:00",
+        "days": ["Mon", "Wed", "Fri"],
+        "notes": "Take with breakfast",
+        "createdAt": "2024-01-10T08:00:00.000Z",
+        "updatedAt": "2024-01-10T08:00:00.000Z"
+      },
+      {
+        "id": "65a1b2c3d4e5f6g7h8i9j0k2",
+        "name": "Omega 3",
+        "time": "18:00",
+        "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        "notes": null,
+        "createdAt": "2024-01-12T10:00:00.000Z",
+        "updatedAt": "2024-01-12T10:00:00.000Z"
+      }
+    ]
+  },
+  "timestamp": "2024-01-15T16:00:00.000Z"
+}
+```
+
+**Monthly Supplement Logs:**
+```json
+{
+  "status": "success",
+  "message": "Supplement logs retrieved successfully",
+  "data": {
+    "logs": [
+      {
+        "date": "2024-01-15",
+        "logs": [
+          {
+            "id": "65a1b2c3d4e5f6g7h8i9j0k3",
+            "supplementId": "65a1b2c3d4e5f6g7h8i9j0k1",
+            "supplementName": "Vitamin D",
+            "status": "taken",
+            "timestamp": "2024-01-15T09:00:00.000Z",
+            "createdAt": "2024-01-15T09:00:00.000Z"
+          }
+        ]
+      },
+      {
+        "date": "2024-01-13",
+        "logs": [
+          {
+            "id": "65a1b2c3d4e5f6g7h8i9j0k4",
+            "supplementId": "65a1b2c3d4e5f6g7h8i9j0k1",
+            "supplementName": "Vitamin D",
+            "status": "skipped",
+            "timestamp": "2024-01-13T09:00:00.000Z",
+            "createdAt": "2024-01-13T09:00:00.000Z"
+          }
+        ]
+      }
+    ]
+  },
+  "timestamp": "2024-01-15T16:00:00.000Z"
+}
+```
+
+**Valid Day Abbreviations:**
+- `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, `Sat`, `Sun`
+
+**Valid Status Values:**
+- `taken` - User took the supplement
+- `skipped` - User skipped the supplement
+
 ### 🛡️ Super Admin Endpoints
 
 #### Admin Authentication
@@ -373,6 +579,105 @@ DELETE /v1/admin/policy/:id                   # Delete policy
   "timestamp": "ISO date"
 }
 ```
+
+### Water Tracker Data Structures
+
+#### Water Intake Entry
+```json
+{
+  "id": "string (MongoDB ObjectId)",
+  "amount": number,  // Amount in ml
+  "timestamp": "ISO date",
+  "createdAt": "ISO date",
+  "updatedAt": "ISO date"
+}
+```
+
+#### Water Goal
+```json
+{
+  "userId": "string (MongoDB ObjectId)",
+  "dailyGoal": number,  // Daily goal in ml (default: 2000)
+  "updatedAt": "ISO date"
+}
+```
+
+#### Daily Water Intake Response
+```json
+{
+  "goal": number,  // Daily goal in ml
+  "total": number,  // Total intake for the day in ml
+  "entries": [
+    {
+      "id": "string",
+      "amount": number,
+      "timestamp": "ISO date",
+      "createdAt": "ISO date"
+    }
+  ]
+}
+```
+
+### Supplements Tracker Data Structures
+
+#### Supplement Schedule
+```json
+{
+  "id": "string (MongoDB ObjectId)",
+  "name": "string",  // e.g., "Vitamin D", "Omega 3"
+  "time": "string",  // HH:MM format (e.g., "09:00")
+  "days": ["string"],  // Array of day abbreviations: ["Mon", "Wed", "Fri"]
+  "notes": "string | null",  // Optional notes
+  "createdAt": "ISO date",
+  "updatedAt": "ISO date"
+}
+```
+
+#### Supplement Log Entry
+```json
+{
+  "id": "string (MongoDB ObjectId)",
+  "supplementId": "string (MongoDB ObjectId)",
+  "supplementName": "string",  // Populated from supplement
+  "status": "taken | skipped",
+  "timestamp": "ISO date",
+  "createdAt": "ISO date"
+}
+```
+
+#### Monthly Supplement Logs Response
+```json
+{
+  "logs": [
+    {
+      "date": "YYYY-MM-DD",  // Date string
+      "logs": [
+        {
+          "id": "string",
+          "supplementId": "string",
+          "supplementName": "string",
+          "status": "taken | skipped",
+          "timestamp": "ISO date",
+          "createdAt": "ISO date"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Valid Day Abbreviations:**
+- `Mon` - Monday
+- `Tue` - Tuesday
+- `Wed` - Wednesday
+- `Thu` - Thursday
+- `Fri` - Friday
+- `Sat` - Saturday
+- `Sun` - Sunday
+
+**Valid Status Values:**
+- `taken` - User took the supplement
+- `skipped` - User skipped the supplement
 
 ---
 
@@ -589,6 +894,420 @@ const getTermsConditions = async () => {
     return null;
   }
 };
+```
+
+### Water Tracker Integration
+
+#### Add Water Intake
+```javascript
+const addWaterIntake = async (amount) => {
+  try {
+    const response = await API.post('/v1/water/add', { amount });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to add water intake' };
+  }
+};
+
+// Usage example
+const handleAddWater = async () => {
+  const result = await addWaterIntake(250); // 250ml
+  if (result.success) {
+    console.log('Water intake added:', result.data);
+    // Refresh daily data
+    await fetchDailyWaterIntake();
+  }
+};
+```
+
+#### Get Daily Water Intake
+```javascript
+const getDailyWaterIntake = async (date = null) => {
+  try {
+    const url = date 
+      ? `/v1/water/daily?date=${date}` 
+      : '/v1/water/daily';
+    const response = await API.get(url);
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to fetch water intake' };
+  }
+};
+
+// Usage example
+const fetchDailyWater = async () => {
+  // Get today's data
+  const today = await getDailyWaterIntake();
+  
+  // Get specific date
+  const specificDate = await getDailyWaterIntake('2024-01-15');
+  
+  if (today.success) {
+    const { goal, total, entries } = today.data;
+    const percentage = (total / goal) * 100;
+    console.log(`Water intake: ${total}ml / ${goal}ml (${percentage.toFixed(1)}%)`);
+  }
+};
+```
+
+#### Update Water Goal
+```javascript
+const updateWaterGoal = async (dailyGoal) => {
+  try {
+    const response = await API.put('/v1/water/goal', { dailyGoal });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to update water goal' };
+  }
+};
+
+// Usage example
+const handleUpdateGoal = async () => {
+  const result = await updateWaterGoal(3000); // Set goal to 3000ml
+  if (result.success) {
+    console.log('Water goal updated:', result.data);
+  }
+};
+```
+
+### Supplements Tracker Integration
+
+#### Create Supplement Schedule
+```javascript
+const createSupplement = async (supplementData) => {
+  try {
+    const response = await API.post('/v1/supplements', supplementData);
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to create supplement' };
+  }
+};
+
+// Usage example
+const handleCreateSupplement = async () => {
+  const supplementData = {
+    name: 'Vitamin D',
+    time: '09:00',
+    days: ['Mon', 'Wed', 'Fri'],
+    notes: 'Take with breakfast'
+  };
+  
+  const result = await createSupplement(supplementData);
+  if (result.success) {
+    console.log('Supplement created:', result.data);
+    // Refresh supplements list
+    await fetchSupplements();
+  }
+};
+```
+
+#### Get All Supplements
+```javascript
+const getSupplements = async () => {
+  try {
+    const response = await API.get('/v1/supplements');
+    return { success: true, data: response.data.data.supplements };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to fetch supplements' };
+  }
+};
+
+// Usage example
+const fetchSupplements = async () => {
+  const result = await getSupplements();
+  if (result.success) {
+    console.log('Supplements:', result.data);
+    // Group by time for display
+    const groupedByTime = result.data.reduce((acc, supplement) => {
+      if (!acc[supplement.time]) {
+        acc[supplement.time] = [];
+      }
+      acc[supplement.time].push(supplement);
+      return acc;
+    }, {});
+  }
+};
+```
+
+#### Update Supplement
+```javascript
+const updateSupplement = async (supplementId, updateData) => {
+  try {
+    const response = await API.put(`/v1/supplements/${supplementId}`, updateData);
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to update supplement' };
+  }
+};
+
+// Usage example
+const handleUpdateSupplement = async (id) => {
+  const updateData = {
+    time: '10:00',
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+  };
+  
+  const result = await updateSupplement(id, updateData);
+  if (result.success) {
+    console.log('Supplement updated:', result.data);
+  }
+};
+```
+
+#### Delete Supplement
+```javascript
+const deleteSupplement = async (supplementId) => {
+  try {
+    const response = await API.delete(`/v1/supplements/${supplementId}`);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to delete supplement' };
+  }
+};
+
+// Usage example
+const handleDeleteSupplement = async (id) => {
+  if (confirm('Are you sure you want to delete this supplement?')) {
+    const result = await deleteSupplement(id);
+    if (result.success) {
+      console.log('Supplement deleted');
+      await fetchSupplements();
+    }
+  }
+};
+```
+
+#### Log Supplement Intake
+```javascript
+const logSupplement = async (supplementId, status) => {
+  try {
+    const response = await API.post('/v1/supplements/log', {
+      supplementId,
+      status // 'taken' or 'skipped'
+    });
+    return { success: true, data: response.data.data };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to log supplement' };
+  }
+};
+
+// Usage example
+const handleLogSupplement = async (supplementId) => {
+  // Mark as taken
+  const result = await logSupplement(supplementId, 'taken');
+  if (result.success) {
+    console.log('Supplement logged:', result.data);
+    // Refresh logs
+    await fetchSupplementLogs();
+  }
+};
+```
+
+#### Get Monthly Supplement Logs
+```javascript
+const getSupplementLogs = async (month = null) => {
+  try {
+    const url = month 
+      ? `/v1/supplements/logs?month=${month}` 
+      : '/v1/supplements/logs';
+    const response = await API.get(url);
+    return { success: true, data: response.data.data.logs };
+  } catch (error) {
+    return { success: false, error: error.response?.data?.message || 'Failed to fetch logs' };
+  }
+};
+
+// Usage example
+const fetchSupplementLogs = async () => {
+  // Get current month's logs
+  const currentMonth = await getSupplementLogs();
+  
+  // Get specific month's logs
+  const januaryLogs = await getSupplementLogs('2024-01');
+  
+  if (currentMonth.success) {
+    console.log('Supplement logs:', currentMonth.data);
+    // Format for calendar view
+    const logsByDate = currentMonth.data.reduce((acc, dayLog) => {
+      acc[dayLog.date] = dayLog.logs;
+      return acc;
+    }, {});
+  }
+};
+```
+
+### React Hooks for Water & Supplements
+
+```javascript
+// Custom hook for water tracking
+const useWaterTracker = () => {
+  const [dailyData, setDailyData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchDaily = async (date = null) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await getDailyWaterIntake(date);
+      if (result.success) {
+        setDailyData(result.data);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Failed to fetch water intake');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addIntake = async (amount) => {
+    const result = await addWaterIntake(amount);
+    if (result.success) {
+      await fetchDaily(); // Refresh data
+    }
+    return result;
+  };
+
+  const updateGoal = async (goal) => {
+    const result = await updateWaterGoal(goal);
+    if (result.success) {
+      await fetchDaily(); // Refresh data
+    }
+    return result;
+  };
+
+  useEffect(() => {
+    fetchDaily();
+  }, []);
+
+  return { dailyData, loading, error, addIntake, updateGoal, fetchDaily };
+};
+
+// Custom hook for supplements
+const useSupplements = () => {
+  const [supplements, setSupplements] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchSupplements = async () => {
+    setLoading(true);
+    try {
+      const result = await getSupplements();
+      if (result.success) {
+        setSupplements(result.data);
+      }
+    } catch (err) {
+      setError('Failed to fetch supplements');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchLogs = async (month = null) => {
+    try {
+      const result = await getSupplementLogs(month);
+      if (result.success) {
+        setLogs(result.data);
+      }
+    } catch (err) {
+      setError('Failed to fetch logs');
+    }
+  };
+
+  const createSupplement = async (data) => {
+    const result = await createSupplement(data);
+    if (result.success) {
+      await fetchSupplements();
+    }
+    return result;
+  };
+
+  const logSupplement = async (supplementId, status) => {
+    const result = await logSupplement(supplementId, status);
+    if (result.success) {
+      await fetchLogs();
+    }
+    return result;
+  };
+
+  useEffect(() => {
+    fetchSupplements();
+    fetchLogs();
+  }, []);
+
+  return {
+    supplements,
+    logs,
+    loading,
+    error,
+    createSupplement,
+    logSupplement,
+    fetchSupplements,
+    fetchLogs
+  };
+};
+```
+
+### Push Notifications for Supplements
+
+The backend automatically sends push notifications for supplement reminders at the scheduled times. To receive these notifications:
+
+1. **Register Push Token** (if not already done):
+```javascript
+const registerPushToken = async (token, deviceType) => {
+  await API.post('/v1/push/save-push-token', {
+    token,
+    deviceType // 'web', 'ios', or 'android'
+  });
+};
+```
+
+2. **Notification Format**:
+When a supplement reminder is triggered, you'll receive a push notification with:
+```json
+{
+  "title": "Supplement Reminder",
+  "body": "Time for your supplement: Vitamin D",
+  "data": {
+    "type": "supplement_reminder",
+    "supplementName": "Vitamin D"
+  }
+}
+```
+
+3. **Handle Notification**:
+```javascript
+// Example for service worker (web)
+self.addEventListener('push', (event) => {
+  const data = event.data.json();
+  
+  if (data.data?.type === 'supplement_reminder') {
+    // Show notification
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      data: data.data,
+      icon: '/icon-192x192.png',
+      badge: '/badge-72x72.png',
+      tag: `supplement-${data.data.supplementName}`,
+      requireInteraction: true
+    });
+  }
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  if (event.notification.data?.type === 'supplement_reminder') {
+    // Open app and navigate to supplement logging
+    event.waitUntil(
+      clients.openWindow('/supplements?log=true')
+    );
+  }
+});
 ```
 
 ---
@@ -887,6 +1606,9 @@ const useAPI = () => {
 2. **OTP verification component**
 3. **User profile management**
 4. **Dashboard for diet tracking**
+5. **Water intake tracking interface**
+6. **Supplements schedule management**
+7. **Supplement logging and history**
 
 ### Phase 3: Public Pages
 1. **Company information page**

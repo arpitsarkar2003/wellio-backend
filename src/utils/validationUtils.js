@@ -502,6 +502,83 @@ class ValidationUtils {
     return schema.validate(data, { abortEarly: false });
   }
 
+  // Water Intake validation
+  static validateWaterIntake(data) {
+    const schema = Joi.object({
+      amount: Joi.number().min(0).required().messages({
+        'number.min': 'Amount cannot be negative',
+        'any.required': 'Amount is required',
+        'number.base': 'Amount must be a number'
+      })
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+  // Water Goal validation
+  static validateWaterGoal(data) {
+    const schema = Joi.object({
+      dailyGoal: Joi.number().min(0).required().messages({
+        'number.min': 'Daily goal cannot be negative',
+        'any.required': 'Daily goal is required',
+        'number.base': 'Daily goal must be a number'
+      })
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+  // Supplement validation
+  static validateSupplement(data, isUpdate = false) {
+    const schema = Joi.object({
+      name: isUpdate 
+        ? Joi.string().optional()
+        : Joi.string().required().messages({
+            'any.required': 'Supplement name is required'
+          }),
+      time: isUpdate
+        ? Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).optional().messages({
+            'string.pattern.base': 'Time must be in HH:MM format'
+          })
+        : Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required().messages({
+            'string.pattern.base': 'Time must be in HH:MM format',
+            'any.required': 'Time is required'
+          }),
+      days: isUpdate
+        ? Joi.array().items(
+            Joi.string().valid('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
+          ).min(1).optional().messages({
+            'array.min': 'At least one day must be selected',
+            'any.only': 'Days must be valid day abbreviations (Mon, Tue, Wed, Thu, Fri, Sat, Sun)'
+          })
+        : Joi.array().items(
+            Joi.string().valid('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
+          ).min(1).required().messages({
+            'array.min': 'At least one day must be selected',
+            'any.required': 'Days are required',
+            'any.only': 'Days must be valid day abbreviations (Mon, Tue, Wed, Thu, Fri, Sat, Sun)'
+          }),
+      notes: Joi.string().allow('', null).optional()
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+  // Supplement Log validation
+  static validateSupplementLog(data) {
+    const schema = Joi.object({
+      supplementId: Joi.string().required().messages({
+        'any.required': 'Supplement ID is required'
+      }),
+      status: Joi.string().valid('taken', 'skipped').required().messages({
+        'any.only': 'Status must be either "taken" or "skipped"',
+        'any.required': 'Status is required'
+      })
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
   // Sanitize input
   static sanitizeInput(input) {
     if (!input || typeof input !== 'string') {
