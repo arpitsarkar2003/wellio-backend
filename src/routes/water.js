@@ -99,3 +99,6 @@ router.put('/goal', authMiddleware.requireAuth, WaterController.updateWaterGoal)
 
 module.exports = router;
 
+
+
+

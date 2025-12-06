@@ -41,3 +41,6 @@ waterGoalSchema.statics.findOrCreate = async function (userId, defaultGoal = 200
 
 module.exports = mongoose.model('WaterGoal', waterGoalSchema);
 
+
+
+

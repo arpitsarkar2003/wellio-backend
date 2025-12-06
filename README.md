@@ -1,4 +1,4 @@
-# 🥗 Wellio Diet Tracker Backend
+# 🥗 Wellio Diet Tracker Backend v1
 
 A comprehensive Node.js/Express backend API for the Wellio Diet Tracking Application with user management, super admin features, company management, and policy handling.
 
@@ -177,10 +177,10 @@ npm run setup      # Create initial super admin
 
 ## 📚 API Documentation
 
-- **Swagger UI**: `http://localhost:3000/api-docs`
-- **Welcome**: `http://localhost:3000/`
-- **Health Check**: `http://localhost:3000/health`
-- **API v1 Info**: `http://localhost:3000/v1`
+- **Swagger UI**: `https://wellio-backend.vercel.app/api-docs`
+- **Welcome**: `https://wellio-backend.vercel.app/`
+- **Health Check**: `https://wellio-backend.vercel.app/health`
+- **API v1 Info**: `https://wellio-backend.vercel.app/v1`
 
 ## 🔒 Security Features
 
@@ -207,7 +207,7 @@ npm run setup      # Create initial super admin
 
 ### Test Super Admin Login
 ```bash
-curl -X POST http://localhost:3000/v1/admin/login \
+curl -X POST https://wellio-backend.vercel.app/v1/admin/login \
   -H "Content-Type: application/json" \
   -d '{
     "username": "wellio_admin",
@@ -217,7 +217,7 @@ curl -X POST http://localhost:3000/v1/admin/login \
 
 ### Test User Registration
 ```bash
-curl -X POST http://localhost:3000/v1/auth/signup \
+curl -X POST https://wellio-backend.vercel.app/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",

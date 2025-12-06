@@ -68,3 +68,6 @@ supplementSchema.methods.isScheduledForDay = function (dayName) {
 
 module.exports = mongoose.model('Supplement', supplementSchema);
 
+
+
+

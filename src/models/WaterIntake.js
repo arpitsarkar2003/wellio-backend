@@ -79,3 +79,6 @@ waterIntakeSchema.statics.getTotalForDate = async function (userId, date) {
 
 module.exports = mongoose.model('WaterIntake', waterIntakeSchema);
 
+
+
+

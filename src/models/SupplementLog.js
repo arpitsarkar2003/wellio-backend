@@ -84,3 +84,6 @@ supplementLogSchema.statics.groupByDate = async function (userId, year, month) {
 
 module.exports = mongoose.model('SupplementLog', supplementLogSchema);
 
+
+
+
