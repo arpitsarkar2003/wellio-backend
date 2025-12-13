@@ -43,6 +43,7 @@ const dietPlanRoutes = require('./src/routes/dietPlan');
 const pushRoutes = require('./src/routes/push');
 const waterRoutes = require('./src/routes/water');
 const supplementRoutes = require('./src/routes/supplements');
+const mealLogRoutes = require('./src/routes/mealLog');
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve);
@@ -73,6 +74,7 @@ app.use('/v1/diet-plans', dietPlanRoutes);
 app.use('/v1/push', pushRoutes);
 app.use('/v1/water', waterRoutes);
 app.use('/v1/supplements', supplementRoutes);
+app.use('/v1/meal-logs', mealLogRoutes);
 
 // API v1 routes placeholder
 app.get('/v1', (req, res) => {
@@ -90,6 +92,7 @@ app.get('/v1', (req, res) => {
       pushNotifications: '/v1/push',
       waterTracker: '/v1/water',
       supplementsTracker: '/v1/supplements',
+      mealLogs: '/v1/meal-logs',
       health: '/health'
     }
   });
