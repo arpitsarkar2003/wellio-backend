@@ -563,95 +563,118 @@ class EmailUtils {
   generateAnonymousEmailTemplate() {
     // TODO: Add custom email template here
     return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to Wellio</title>
-          <style>
-              * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-              }
-              
-              body {
-                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                  line-height: 1.6;
-                  color: #333;
-                  background-color: #f5f5f5;
-              }
-              
-              .email-container {
-                  max-width: 600px;
-                  margin: 0 auto;
-                  background-color: #ffffff;
-              }
-              
-              .header {
-                  background: linear-gradient(135deg, #A8C5BE 0%, #8BB3A3 100%);
-                  padding: 40px 20px;
-                  text-align: center;
-              }
-              
-              .logo {
-                  max-width: 120px;
-                  margin: 0 auto 20px;
-              }
-              
-              .header h1 {
-                  color: #ffffff;
-                  font-size: 32px;
-                  font-weight: 300;
-                  letter-spacing: 2px;
-                  margin-bottom: 10px;
-              }
-              
-              .content {
-                  padding: 40px 30px;
-              }
-              
-              .body-text {
-                  font-size: 14px;
-                  color: #555;
-                  margin-bottom: 20px;
-                  line-height: 1.8;
-              }
-              
-              .footer {
-                  background-color: #f9fdf9;
-                  padding: 30px;
-                  text-align: center;
-                  border-top: 1px solid #e0e0e0;
-                  font-size: 12px;
-                  color: #777;
-              }
-          </style>
-      </head>
-      <body>
-          <div class="email-container">
-              <div class="header">
-                  <h1>WELLIO</h1>
-              </div>
-              
-              <div class="content">
-                  <p class="body-text">
-                      Thank you for your interest in Wellio! We have received your email and will be in touch soon.
-                  </p>
-                  
-                  <p class="body-text">
-                      Best regards,<br>
-                      <strong>The Wellio Team</strong>
-                  </p>
-              </div>
-              
-              <div class="footer">
-                  <p>© 2025 Wellio. All rights reserved.</p>
-              </div>
-          </div>
-      </body>
-      </html>
+        <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to WELLIO</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background-color: #F9F8F6;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #F9F8F6;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 12px; overflow: hidden;" class="email-container">
+                    
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #A8C5BE; padding: 32px 40px; text-align: center;">
+                            <img src="https://i.ibb.co/HD80cJrF/landscape.png" alt="WELLIO" style="max-width: 200px; height: auto; display: block; margin: 0 auto;">
+                        </td>
+                    </tr>
+
+                    <!-- Hero Section -->
+                    <tr>
+                        <td style="padding: 48px 40px 32px; text-align: center;">
+                            <h1 style="margin: 0 0 12px; font-size: 32px; font-weight: 600; color: #333333; line-height: 1.3;">Welcome to WELLIO 👋</h1>
+                            <p style="margin: 0; font-size: 18px; color: #666666; line-height: 1.5;">You're officially on the early access list.</p>
+                        </td>
+                    </tr>
+
+                    <!-- Intro Copy -->
+                    <tr>
+                        <td style="padding: 0 40px 32px;">
+                            <p style="margin: 0; font-size: 16px; color: #333333; line-height: 1.6; text-align: center;">WELLIO helps you follow nutritionist- or trainer-prescribed diet plans through time-based meal reminders, simple meal check-ins, and calorie tracking.</p>
+                        </td>
+                    </tr>
+
+                    <!-- Feature Highlights -->
+                    <tr>
+                        <td style="padding: 0 40px 40px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                <tr>
+                                    <td style="background-color: #F9F8F6; border-radius: 8px; padding: 24px; margin-bottom: 12px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="font-size: 24px; padding-right: 16px; vertical-align: middle; width: 32px;">⏰</td>
+                                                <td style="font-size: 16px; color: #333333; line-height: 1.5; vertical-align: middle;">Time-based meal reminders</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 12px;">
+                                <tr>
+                                    <td style="background-color: #F9F8F6; border-radius: 8px; padding: 24px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="font-size: 24px; padding-right: 16px; vertical-align: middle; width: 32px;">✅</td>
+                                                <td style="font-size: 16px; color: #333333; line-height: 1.5; vertical-align: middle;">Easy meal check-ins (Yes / Not Yet / Skipped)</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top: 12px;">
+                                <tr>
+                                    <td style="background-color: #F9F8F6; border-radius: 8px; padding: 24px;">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                                            <tr>
+                                                <td style="font-size: 24px; padding-right: 16px; vertical-align: middle; width: 32px;">📊</td>
+                                                <td style="font-size: 16px; color: #333333; line-height: 1.5; vertical-align: middle;">Daily calorie & progress tracking</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Coming Soon Section -->
+                    <tr>
+                        <td style="padding: 0 40px 32px; text-align: center;">
+                            <div style="background-color: #EEF4F2; border-radius: 8px; padding: 24px;">
+                                <p style="margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #333333; line-height: 1.5;">WELLIO is launching soon on web & mobile.</p>
+                                <p style="margin: 0; font-size: 15px; color: #666666; line-height: 1.5;">As an early access member, you'll be among the first to try WELLIO.</p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- CTA Button -->
+                    <tr>
+                        <td style="padding: 0 40px 48px; text-align: center;">
+                            <a href="${process.env.APP_URL}" style="display: inline-block; background-color: #A8C5BE; color: #FFFFFF; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 16px; font-weight: 600; line-height: 1.5;">Stay on the Early Access List</a>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 32px 40px; border-top: 1px solid #E5E5E5; text-align: center;">
+                            <p style="margin: 0 0 20px; font-size: 16px; color: #666666; line-height: 1.5; font-style: italic;">"Consistency beats motivation."</p>
+                            <p style="margin: 0 0 8px; font-size: 13px; color: #999999; line-height: 1.5;">You received this email because you signed up for updates from WELLIO.</p>
+                            <p style="margin: 0; font-size: 13px; line-height: 1.5;"><a href="#" style="color: #A8C5BE; text-decoration: underline;">Unsubscribe</a></p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+
     `;
   }
 
