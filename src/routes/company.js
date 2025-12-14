@@ -124,4 +124,53 @@ const router = express.Router();
  */
 router.get('/', CompanyController.getCompanyInfo);
 
+/**
+ * @swagger
+ * /v1/company/contact:
+ *   post:
+ *     summary: Submit anonymous email for contact (Public)
+ *     tags: [Public Company Info]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: Email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 message:
+ *                   type: string
+ *                   example: Email sent successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                       example: "user@example.com"
+ *                     messageId:
+ *                       type: string
+ *                       example: "<message-id>"
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/contact', CompanyController.submitAnonymousEmail);
+
 module.exports = router;

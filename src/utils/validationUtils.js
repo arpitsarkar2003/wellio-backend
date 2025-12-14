@@ -579,6 +579,15 @@ class ValidationUtils {
     return schema.validate(data, { abortEarly: false });
   }
 
+  // Anonymous email submission validation
+  static validateAnonymousEmail(data) {
+    const schema = Joi.object({
+      email: this.emailSchema
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
   // Sanitize input
   static sanitizeInput(input) {
     if (!input || typeof input !== 'string') {

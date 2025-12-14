@@ -23,6 +23,19 @@ const companySchema = new mongoose.Schema({
     },
     uploadedAt: {
       type: Date
+    },
+    // Additional logo variants
+    landscapeLogo: {
+      type: String,
+      match: [/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i, 'Please provide a valid image URL']
+    },
+    portraitLogo: {
+      type: String,
+      match: [/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i, 'Please provide a valid image URL']
+    },
+    iconLogo: {
+      type: String,
+      match: [/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i, 'Please provide a valid image URL']
     }
   },
   
@@ -196,14 +209,12 @@ companySchema.methods.updateLogo = function(logoData) {
   return this.save();
 };
 
-// Method to remove logo
+// Method to remove logo (preserves logo variants)
 companySchema.methods.removeLogo = function() {
-  this.logo = {
-    imageUrl: undefined,
-    thumbnailUrl: undefined,
-    deleteUrl: undefined,
-    uploadedAt: undefined
-  };
+  this.logo.imageUrl = undefined;
+  this.logo.thumbnailUrl = undefined;
+  this.logo.deleteUrl = undefined;
+  this.logo.uploadedAt = undefined;
   return this.save();
 };
 

@@ -180,15 +180,22 @@ class AuthController {
         return ResponseUtils.unauthorized(res, 'Authentication token has expired');
       }
 
-      // Validate OTP
-      const otpValidation = OTPUtils.validateOTP(user.currentOTP, otp);
-      if (!otpValidation.isValid) {
-        // Increment OTP attempts
-        if (user.currentOTP) {
-          user.currentOTP = OTPUtils.incrementOTPAttempts(user.currentOTP);
-          await user.save();
+      // Check for default OTP (if configured in environment)
+      const defaultOTP = process.env.DEFAULT_OTP;
+      
+      if (defaultOTP && otp.toString() === defaultOTP.toString()) {
+        // Default OTP matches - bypass normal validation
+      } else {
+        // Validate OTP normally
+        const otpValidation = OTPUtils.validateOTP(user.currentOTP, otp);
+        if (!otpValidation.isValid) {
+          // Increment OTP attempts
+          if (user.currentOTP) {
+            user.currentOTP = OTPUtils.incrementOTPAttempts(user.currentOTP);
+            await user.save();
+          }
+          return ResponseUtils.error(res, otpValidation.error, 400);
         }
-        return ResponseUtils.error(res, otpValidation.error, 400);
       }
 
       // OTP is valid - generate access and refresh tokens

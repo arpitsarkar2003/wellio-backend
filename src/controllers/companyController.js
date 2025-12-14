@@ -307,6 +307,37 @@ class CompanyController {
       return ResponseUtils.internalError(res, 'Failed to get image information');
     }
   }
+  
+  /**
+   * Anonymous Email Submission - POST /v1/company/contact
+   */
+  static async submitAnonymousEmail(req, res) {
+    try {
+      const { error } = ValidationUtils.validateAnonymousEmail(req.body);
+      if (error) {
+        return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
+      }
+      
+      const { email } = req.body;
+      
+      // Send email using emailUtils
+      const EmailUtils = require('../utils/emailUtils');
+      const emailResult = await EmailUtils.sendAnonymousEmail(email);
+      
+      if (!emailResult.success) {
+        return ResponseUtils.error(res, `Failed to send email: ${emailResult.error}`, 500);
+      }
+      
+      return ResponseUtils.success(res, 'Thanks For Contacting Us! We will get back to you soon.', {
+        email,
+        messageId: emailResult.messageId
+      });
+      
+    } catch (error) {
+      console.error('Submit anonymous email error:', error.message);
+      return ResponseUtils.internalError(res, 'Failed to submit email');
+    }
+  }
 }
 
 module.exports = CompanyController;

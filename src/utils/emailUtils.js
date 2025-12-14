@@ -531,6 +531,130 @@ class EmailUtils {
     `;
   }
 
+  // Send anonymous email template
+  async sendAnonymousEmail(email) {
+    try {
+      if (!this.transporter) {
+        throw new Error('Email service not configured');
+      }
+
+      const mailOptions = {
+        from: {
+          name: 'Wellio Diet Tracker',
+          address: process.env.SMTP_FROM || process.env.SMTP_USER
+        },
+        to: email,
+        subject: 'Welcome to Wellio',
+        html: this.generateAnonymousEmailTemplate(),
+        text: 'Thank you for your interest in Wellio. We will be in touch soon!'
+      };
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('Anonymous email sent successfully:', result.messageId);
+      return { success: true, messageId: result.messageId };
+
+    } catch (error) {
+      console.error('Failed to send anonymous email:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Generate anonymous email template (placeholder - to be customized later)
+  generateAnonymousEmailTemplate() {
+    // TODO: Add custom email template here
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Welcome to Wellio</title>
+          <style>
+              * {
+                  margin: 0;
+                  padding: 0;
+                  box-sizing: border-box;
+              }
+              
+              body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+                  background-color: #f5f5f5;
+              }
+              
+              .email-container {
+                  max-width: 600px;
+                  margin: 0 auto;
+                  background-color: #ffffff;
+              }
+              
+              .header {
+                  background: linear-gradient(135deg, #A8C5BE 0%, #8BB3A3 100%);
+                  padding: 40px 20px;
+                  text-align: center;
+              }
+              
+              .logo {
+                  max-width: 120px;
+                  margin: 0 auto 20px;
+              }
+              
+              .header h1 {
+                  color: #ffffff;
+                  font-size: 32px;
+                  font-weight: 300;
+                  letter-spacing: 2px;
+                  margin-bottom: 10px;
+              }
+              
+              .content {
+                  padding: 40px 30px;
+              }
+              
+              .body-text {
+                  font-size: 14px;
+                  color: #555;
+                  margin-bottom: 20px;
+                  line-height: 1.8;
+              }
+              
+              .footer {
+                  background-color: #f9fdf9;
+                  padding: 30px;
+                  text-align: center;
+                  border-top: 1px solid #e0e0e0;
+                  font-size: 12px;
+                  color: #777;
+              }
+          </style>
+      </head>
+      <body>
+          <div class="email-container">
+              <div class="header">
+                  <h1>WELLIO</h1>
+              </div>
+              
+              <div class="content">
+                  <p class="body-text">
+                      Thank you for your interest in Wellio! We have received your email and will be in touch soon.
+                  </p>
+                  
+                  <p class="body-text">
+                      Best regards,<br>
+                      <strong>The Wellio Team</strong>
+                  </p>
+              </div>
+              
+              <div class="footer">
+                  <p>© 2025 Wellio. All rights reserved.</p>
+              </div>
+          </div>
+      </body>
+      </html>
+    `;
+  }
+
   // Test email connection
   async testConnection() {
     try {
