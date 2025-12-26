@@ -23,12 +23,24 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'http://localhost:3000',
-        'https://wellio-frontend.vercel.app',
-        'http://localhost:8081'
-      ]
-    : true, // Allow all origins in development (for React Native, emulators, etc.)
+    ? function (origin, callback) {
+        // Allow requests with no origin (mobile apps, React Native)
+        if (!origin) return callback(null, true);
+        
+        // Allow specific web origins
+        const allowedOrigins = [
+          'http://localhost:3000',
+          'https://wellio-frontend.vercel.app',
+          'http://localhost:8081'
+        ];
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      }
+    : true, // Allow all origins in development
   credentials: true,
 }));
 app.use(morgan('combined'));
