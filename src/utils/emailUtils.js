@@ -269,13 +269,13 @@ class EmailUtils {
             <p class="greeting">${userName ? `Hi ${userName},` : 'Hello,'}</p>
             
             <p class="body-text">
-                You've requested to log into your Wellio account. Use the code below to complete your login. This code is valid for 10 minutes.
+                You've requested to log into your Wellio account. Use the code below to complete your login. This code is valid for 5 minutes.
             </p>
             
             <div class="otp-box">
                 <div class="otp-label">Your Login Code</div>
                 <div class="otp-code">${otp}</div>
-                <div class="otp-expiry">Valid for 10 minutes</div>
+                <div class="otp-expiry">Valid for 5 minutes</div>
             </div>
             
             <div class="security-box">

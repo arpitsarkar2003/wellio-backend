@@ -22,11 +22,13 @@ app.use(helmet({
   },
 }));
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://wellio-frontend.vercel.app',
-    'http://localhost:8081'
-  ],
+  origin: process.env.NODE_ENV === 'production' 
+    ? [
+        'http://localhost:3000',
+        'https://wellio-frontend.vercel.app',
+        'http://localhost:8081'
+      ]
+    : true, // Allow all origins in development (for React Native, emulators, etc.)
   credentials: true,
 }));
 app.use(morgan('combined'));
@@ -44,6 +46,7 @@ const pushRoutes = require('./src/routes/push');
 const waterRoutes = require('./src/routes/water');
 const supplementRoutes = require('./src/routes/supplements');
 const mealLogRoutes = require('./src/routes/mealLog');
+const aiRoutes = require('./src/routes/ai');
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve);
@@ -64,6 +67,7 @@ app.get('/', (req, res) => {
   });
 });
 
+
 // API v1 routes
 app.use('/v1/auth', authRoutes);
 app.use('/v1/user', userRoutes);
@@ -75,6 +79,7 @@ app.use('/v1/push', pushRoutes);
 app.use('/v1/water', waterRoutes);
 app.use('/v1/supplements', supplementRoutes);
 app.use('/v1/meal-logs', mealLogRoutes);
+app.use('/v1/ai', aiRoutes);
 
 // API v1 routes placeholder
 app.get('/v1', (req, res) => {
@@ -93,6 +98,7 @@ app.get('/v1', (req, res) => {
       waterTracker: '/v1/water',
       supplementsTracker: '/v1/supplements',
       mealLogs: '/v1/meal-logs',
+      aiChat: '/v1/ai',
       health: '/health'
     }
   });
@@ -158,11 +164,15 @@ const startServer = async () => {
   // Initialize supplement reminder service
   SupplementReminderService.initialize();
 
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Wellio Backend Server running on port ${PORT}`);
     console.log(`📚 API Documentation available at http://localhost:${PORT}/api-docs`);
     console.log(`🏠 Welcome endpoint: http://localhost:${PORT}/`);
     console.log(`⚡ API v1 endpoint: http://localhost:${PORT}/v1`);
+    console.log(`\n📱 React Native Connection URLs:`);
+    console.log(`   Android Emulator: http://10.0.2.2:${PORT}`);
+    console.log(`   iOS Simulator: http://localhost:${PORT}`);
+    console.log(`   Physical Device: http://<your-local-ip>:${PORT}`);
   });
 };
 
