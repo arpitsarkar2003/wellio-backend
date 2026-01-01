@@ -588,6 +588,112 @@ class ValidationUtils {
     return schema.validate(data, { abortEarly: false });
   }
 
+  // Email subscription validation
+  static validateEmailSubscription(data) {
+    const schema = Joi.object({
+      email: this.emailSchema
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+  // Email template validation
+  static validateEmailTemplate(data) {
+    const schema = Joi.object({
+      name: Joi.string()
+        .required()
+        .trim()
+        .max(200)
+        .messages({
+          'any.required': 'Template name is required',
+          'string.max': 'Template name cannot exceed 200 characters',
+          'string.empty': 'Template name cannot be empty'
+        }),
+      subject: Joi.string()
+        .required()
+        .trim()
+        .max(200)
+        .messages({
+          'any.required': 'Email subject is required',
+          'string.max': 'Subject cannot exceed 200 characters',
+          'string.empty': 'Subject cannot be empty'
+        }),
+      htmlContent: Joi.string()
+        .required()
+        .messages({
+          'any.required': 'HTML content is required'
+        }),
+      plainTextContent: Joi.string()
+        .allow('', null)
+        .optional()
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+  // Email template update validation
+  static validateEmailTemplateUpdate(data) {
+    const schema = Joi.object({
+      name: Joi.string()
+        .trim()
+        .max(200)
+        .optional()
+        .messages({
+          'string.max': 'Template name cannot exceed 200 characters',
+          'string.empty': 'Template name cannot be empty'
+        }),
+      subject: Joi.string()
+        .trim()
+        .max(200)
+        .optional()
+        .messages({
+          'string.max': 'Subject cannot exceed 200 characters',
+          'string.empty': 'Subject cannot be empty'
+        }),
+      htmlContent: Joi.string()
+        .optional(),
+      plainTextContent: Joi.string()
+        .allow('', null)
+        .optional()
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
+  // Email broadcast validation
+  static validateEmailBroadcast(data) {
+    const schema = Joi.object({
+      templateId: Joi.string()
+        .required()
+        .messages({
+          'any.required': 'Template ID is required',
+          'string.empty': 'Template ID cannot be empty'
+        }),
+      batchSize: Joi.number()
+        .integer()
+        .min(1)
+        .max(30)
+        .required()
+        .messages({
+          'any.required': 'Batch size is required',
+          'number.min': 'Batch size must be at least 1',
+          'number.max': 'Batch size cannot exceed 30',
+          'number.base': 'Batch size must be a number'
+        }),
+      delayBetweenBatches: Joi.number()
+        .integer()
+        .min(3000)
+        .required()
+        .messages({
+          'any.required': 'Delay between batches is required',
+          'number.min': 'Delay between batches must be at least 3 seconds (3000ms)',
+          'number.base': 'Delay between batches must be a number'
+        })
+    });
+
+    return schema.validate(data, { abortEarly: false });
+  }
+
   // Sanitize input
   static sanitizeInput(input) {
     if (!input || typeof input !== 'string') {

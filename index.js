@@ -59,6 +59,8 @@ const waterRoutes = require('./src/routes/water');
 const supplementRoutes = require('./src/routes/supplements');
 const mealLogRoutes = require('./src/routes/mealLog');
 const aiRoutes = require('./src/routes/ai');
+const subscriptionRoutes = require('./src/routes/subscription');
+const emailAdminRoutes = require('./src/routes/email');
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve);
@@ -93,6 +95,10 @@ app.use('/v1/supplements', supplementRoutes);
 app.use('/v1/meal-logs', mealLogRoutes);
 app.use('/v1/ai', aiRoutes);
 
+// API v2 routes
+app.use('/v2/subscriptions', subscriptionRoutes);
+app.use('/v2/admin', emailAdminRoutes);
+
 // API v1 routes placeholder
 app.get('/v1', (req, res) => {
   res.json({
@@ -112,6 +118,10 @@ app.get('/v1', (req, res) => {
       mealLogs: '/v1/meal-logs',
       aiChat: '/v1/ai',
       health: '/health'
+    },
+    v2: {
+      subscriptions: '/v2/subscriptions',
+      emailAdmin: '/v2/admin'
     }
   });
 });

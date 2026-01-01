@@ -63,6 +63,12 @@ Legend: ✅ v1 done · 🚧 Partial · ⏳ TODO
 ## Monetization
 - ⏳ No free/premium tiering, feature gating, or billing hooks.
 
+## Email Subscription & Broadcast (v2)
+- ✅ Public subscription API: idempotent email subscription with validation/normalization, uniqueness enforced at DB level.
+- ✅ Admin template management: HTML email templates with metadata (name, subject, createdAt, updatedAt), CRUD operations.
+- ✅ Admin broadcast system: batch email sending (max batchSize: 30, min delay: 3s), async processing with fault tolerance, status tracking (pending/in-progress/completed/failed), metrics (sent/failed counts, success rate).
+- ✅ Admin observability: subscriber count, broadcast status polling, batch configuration, sent vs failed metrics.
+
 ## Technical Notes
 - ✅ Express + MongoDB (Mongoose), Helmet/CORS/Morgan, Joi validation, rate limiting, Swagger docs, health/welcome endpoints.
 - 🚧 AI and some routes lack auth middleware; ensure protection before production use.
