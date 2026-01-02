@@ -31,7 +31,7 @@ app.use(cors({
         const allowedOrigins = [
           'http://localhost:3000',
           'http://localhost:3001',
-          'http://admin-wellio.vercel.app',
+          'https://admin-wellio.vercel.app',
           'https://wellio-frontend.vercel.app',
           'http://localhost:8081'
         ];
