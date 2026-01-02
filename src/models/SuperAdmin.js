@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const PasswordUtils = require('../utils/passwordUtils');
 
 const superAdminSchema = new mongoose.Schema({
   username: {
@@ -20,11 +19,6 @@ const superAdminSchema = new mongoose.Schema({
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
-  password: {
-    type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters long']
-  },
   role: {
     type: String,
     default: 'super_admin',
@@ -34,26 +28,26 @@ const superAdminSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  // Security question for password recovery
-  securityQuestion: {
-    question: {
-      type: String,
-      required: [true, 'Security question is required'],
-      default: 'Hi, what is your bday?'
-    },
-    answer: {
-      type: String,
-      required: [true, 'Security answer is required']
+  // OTP related fields
+  currentOTP: {
+    code: String,
+    expiresAt: Date,
+    attempts: {
+      type: Number,
+      default: 0
     }
   },
+  // 1F Auth token for OTP verification
+  tempAuthToken: {
+    token: String,
+    expiresAt: Date
+  },
+  // Token blacklist for logout functionality
+  blacklistedTokens: [{
+    token: String,
+    expiresAt: Date
+  }],
   lastLogin: {
-    type: Date
-  },
-  loginAttempts: {
-    type: Number,
-    default: 0
-  },
-  lockUntil: {
     type: Date
   },
   // Session management
@@ -66,12 +60,7 @@ const superAdminSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  }],
-  // Audit log
-  lastPasswordChange: {
-    type: Date,
-    default: Date.now
-  }
+  }]
 }, {
   timestamps: true
 });
@@ -80,113 +69,55 @@ const superAdminSchema = new mongoose.Schema({
 // superAdminSchema.index({ username: 1 }); // Removed - unique: true creates index
 // superAdminSchema.index({ email: 1 }); // Removed - unique: true creates index
 
-// Virtual for account lock status
-superAdminSchema.virtual('isLocked').get(function() {
-  return !!(this.lockUntil && this.lockUntil > Date.now());
-});
-
-// Pre-save middleware to hash password and security answer
-superAdminSchema.pre('save', async function(next) {
-  try {
-    // Hash password if modified
-    if (this.isModified('password')) {
-      this.password = PasswordUtils.hashPasswordSHA256(this.password);
-      
-      // Update last password change if this is a password update (not initial creation)
-      if (!this.isNew) {
-        this.lastPasswordChange = new Date();
-      }
-    }
-    
-    // Hash security answer if modified (but only if it's not already hashed)
-    if (this.isModified('securityQuestion.answer')) {
-      const answer = this.securityQuestion.answer;
-      // Check if already hashed (64 hex chars)
-      const isAlreadyHashed = answer && typeof answer === 'string' && answer.length === 64 && /^[a-f0-9]+$/i.test(answer);
-      
-      if (!isAlreadyHashed) {
-        // Convert to string and hash
-        const answerString = String(answer).trim();
-        this.securityQuestion.answer = PasswordUtils.hashPasswordSHA256(answerString);
-      }
-    }
-    
-    next();
-  } catch (error) {
-    next(error);
+// Method to clear expired OTP
+superAdminSchema.methods.clearExpiredOTP = function() {
+  if (this.currentOTP && this.currentOTP.expiresAt < new Date()) {
+    this.currentOTP = undefined;
+    return this.save();
   }
-});
-
-// Method to compare password
-superAdminSchema.methods.comparePassword = function(candidatePassword) {
-  return PasswordUtils.verifyPasswordSHA256(candidatePassword, this.password);
+  return Promise.resolve(this);
 };
 
-// Method to compare security answer
-superAdminSchema.methods.compareSecurityAnswer = function(candidateAnswer) {
-  const storedAnswer = this.securityQuestion.answer;
-  
-  // Check if stored answer is hashed (SHA256 produces 64 char hex string)
-  const isHashed = storedAnswer && typeof storedAnswer === 'string' && storedAnswer.length === 64 && /^[a-f0-9]+$/i.test(storedAnswer);
-  
-  if (isHashed) {
-    // Normal comparison: compare hashed candidate with stored hash
-    return PasswordUtils.verifyPasswordSHA256(candidateAnswer, storedAnswer);
-  } else {
-    // Plain text comparison: handle both string and number
-    const candidateString = String(candidateAnswer).trim();
-    const storedString = String(storedAnswer).trim();
-    
-    // Compare as strings
-    if (candidateString === storedString) {
-      // If match found and stored is plain text, hash it for future use
-      const candidateHash = PasswordUtils.hashPasswordSHA256(candidateString);
-      this.securityQuestion.answer = candidateHash;
-      this.save().catch(err => console.error('Failed to update security answer hash:', err));
-      return true;
-    }
-    
-    // Also try comparing as numbers (in case one is "221009" and other is 221009)
-    const candidateNum = Number(candidateString);
-    const storedNum = Number(storedString);
-    if (!isNaN(candidateNum) && !isNaN(storedNum) && candidateNum === storedNum) {
-      // If match found and stored is plain text, hash it for future use
-      const candidateHash = PasswordUtils.hashPasswordSHA256(candidateString);
-      this.securityQuestion.answer = candidateHash;
-      this.save().catch(err => console.error('Failed to update security answer hash:', err));
-      return true;
-    }
-    
+// Method to clear expired temp token
+superAdminSchema.methods.clearExpiredTempToken = function() {
+  if (this.tempAuthToken && this.tempAuthToken.expiresAt < new Date()) {
+    this.tempAuthToken = undefined;
+    return this.save();
+  }
+  return Promise.resolve(this);
+};
+
+// Method to check if token is blacklisted
+superAdminSchema.methods.isTokenBlacklisted = function(token) {
+  if (!this.blacklistedTokens || this.blacklistedTokens.length === 0) {
     return false;
   }
+  
+  const now = new Date();
+  // Clean up expired tokens
+  this.blacklistedTokens = this.blacklistedTokens.filter(blacklisted => blacklisted.expiresAt > now);
+  
+  // Check if token is in blacklist
+  return this.blacklistedTokens.some(blacklisted => blacklisted.token === token);
 };
 
-// Method to handle failed login attempts
-superAdminSchema.methods.incLoginAttempts = function() {
-  // If we have a previous lock that has expired, restart at 1
-  if (this.lockUntil && this.lockUntil < Date.now()) {
-    return this.updateOne({
-      $unset: { lockUntil: 1 },
-      $set: { loginAttempts: 1 }
-    });
+// Method to blacklist a token
+superAdminSchema.methods.blacklistToken = function(token, expiresAt) {
+  if (!this.blacklistedTokens) {
+    this.blacklistedTokens = [];
   }
   
-  const updates = { $inc: { loginAttempts: 1 } };
+  // Remove expired tokens
+  const now = new Date();
+  this.blacklistedTokens = this.blacklistedTokens.filter(blacklisted => blacklisted.expiresAt > now);
   
-  // If this is the 5th failed attempt, lock the account for 30 minutes
-  if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
-    updates.$set = { lockUntil: Date.now() + 30 * 60 * 1000 }; // 30 minutes
-  }
-  
-  return this.updateOne(updates);
-};
-
-// Method to reset login attempts after successful login
-superAdminSchema.methods.resetLoginAttempts = function() {
-  return this.updateOne({
-    $unset: { loginAttempts: 1, lockUntil: 1 },
-    $set: { lastLogin: new Date() }
+  // Add new token to blacklist
+  this.blacklistedTokens.push({
+    token,
+    expiresAt
   });
+  
+  return this.save();
 };
 
 // Method to add active session
@@ -233,11 +164,6 @@ superAdminSchema.virtual('profile').get(function() {
     role: this.role,
     isActive: this.isActive,
     lastLogin: this.lastLogin,
-    lastPasswordChange: this.lastPasswordChange,
-    securityQuestion: {
-      question: this.securityQuestion.question
-      // Don't include the answer
-    },
     createdAt: this.createdAt
   };
 });
@@ -246,11 +172,10 @@ superAdminSchema.virtual('profile').get(function() {
 superAdminSchema.set('toJSON', {
   virtuals: true,
   transform: function(doc, ret) {
-    delete ret.password;
-    delete ret.securityQuestion.answer; // Never expose the security answer
+    delete ret.currentOTP;
+    delete ret.tempAuthToken;
+    delete ret.blacklistedTokens;
     delete ret.activeSessions;
-    delete ret.loginAttempts;
-    delete ret.lockUntil;
     delete ret.__v;
     return ret;
   }

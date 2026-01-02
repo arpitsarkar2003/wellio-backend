@@ -2,6 +2,8 @@ const SuperAdmin = require('../models/SuperAdmin');
 const TokenUtils = require('../utils/tokenUtils');
 const ValidationUtils = require('../utils/validationUtils');
 const ResponseUtils = require('../utils/responseUtils');
+const OTPUtils = require('../utils/otpUtils');
+const EmailUtils = require('../utils/emailUtils');
 
 /**
  * Super Admin Management Controllers
@@ -10,27 +12,22 @@ class SuperAdminController {
   
   /**
    * Super Admin Login - POST /v1/admin/login
+   * Sends OTP to admin email
    */
   static async login(req, res) {
     try {
-      const { error } = ValidationUtils.validateAdminLogin(req.body);
+      const { error } = ValidationUtils.validateEmail(req.body);
       if (error) {
         return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
       }
       
-      const { username, password } = req.body;
-      const sanitizedUsername = ValidationUtils.sanitizeInput(username);
+      const { email } = req.body;
+      const sanitizedEmail = ValidationUtils.sanitizeEmail(email);
       
-      // Find admin by username
-      const admin = await SuperAdmin.findByUsername(sanitizedUsername);
+      // Find admin by email
+      const admin = await SuperAdmin.findByEmail(sanitizedEmail);
       if (!admin) {
-        return ResponseUtils.error(res, 'Invalid credentials', 400);
-      }
-      
-      // Check if account is locked
-      if (admin.isLocked) {
-        const lockTime = Math.ceil((admin.lockUntil - Date.now()) / (1000 * 60));
-        return ResponseUtils.error(res, `Account is locked. Try again in ${lockTime} minutes`, 423);
+        return ResponseUtils.error(res, 'Admin not found', 404);
       }
       
       // Check if account is active
@@ -38,24 +35,113 @@ class SuperAdminController {
         return ResponseUtils.error(res, 'Account is disabled', 403);
       }
       
-      // Verify password
-      const isPasswordValid = admin.comparePassword(password);
-      if (!isPasswordValid) {
-        await admin.incLoginAttempts();
-        return ResponseUtils.error(res, 'Invalid credentials', 400);
+      // Clear any expired OTP and temp tokens
+      await admin.clearExpiredOTP();
+      await admin.clearExpiredTempToken();
+      
+      // Generate and store OTP
+      const otpData = OTPUtils.generateOTPWithExpiry(5); // 5 minutes expiry
+      admin.currentOTP = otpData;
+      
+      // Generate 1F authentication token (60 seconds)
+      const tempToken = TokenUtils.generate1FToken(admin._id);
+      admin.tempAuthToken = {
+        token: tempToken,
+        expiresAt: new Date(Date.now() + 60 * 1000) // 60 seconds
+      };
+      
+      await admin.save();
+      
+      // Send OTP via email
+      const emailResult = await EmailUtils.sendOTPEmail(sanitizedEmail, otpData.code, admin.username);
+      if (!emailResult.success) {
+        console.error('OTP email failed:', emailResult.error);
+        return ResponseUtils.error(res, 'Failed to send OTP. Please try again.', 500);
       }
       
-      // Reset login attempts and update last login
-      await admin.resetLoginAttempts();
+      // Update last login
+      admin.lastLogin = new Date();
+      await admin.save();
       
-      // Generate tokens
+      return ResponseUtils.otpSent(res, 'OTP sent to your email address', tempToken);
+      
+    } catch (error) {
+      console.error('Admin login error:', error.message);
+      return ResponseUtils.internalError(res, 'Login failed');
+    }
+  }
+  
+  /**
+   * Verify OTP - POST /v1/admin/verify-otp
+   * Verifies OTP and returns access & refresh tokens
+   */
+  static async verifyOTP(req, res) {
+    try {
+      const { error } = ValidationUtils.validateOTPVerification(req.body);
+      if (error) {
+        return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
+      }
+      
+      const { token, otp } = req.body;
+      
+      // Verify 1F token
+      let decoded;
+      try {
+        decoded = TokenUtils.verify1FToken(token);
+      } catch (tokenError) {
+        return ResponseUtils.unauthorized(res, 'Invalid or expired authentication token');
+      }
+      
+      // Find admin
+      const admin = await SuperAdmin.findById(decoded.userId);
+      if (!admin) {
+        return ResponseUtils.notFound(res, 'Admin not found');
+      }
+      
+      // Check if temp token matches
+      if (!admin.tempAuthToken || admin.tempAuthToken.token !== token) {
+        return ResponseUtils.unauthorized(res, 'Invalid authentication token');
+      }
+      
+      // Check if temp token has expired
+      if (admin.tempAuthToken.expiresAt < new Date()) {
+        admin.tempAuthToken = undefined;
+        await admin.save();
+        return ResponseUtils.unauthorized(res, 'Authentication token has expired');
+      }
+      
+      // Check for default OTP (if configured in environment)
+      const defaultOTP = process.env.DEFAULT_OTP;
+      
+      if (defaultOTP && otp.toString() === defaultOTP.toString()) {
+        // Default OTP matches - bypass normal validation
+      } else {
+        // Validate OTP normally
+        const otpValidation = OTPUtils.validateOTP(admin.currentOTP, otp);
+        if (!otpValidation.isValid) {
+          // Increment OTP attempts
+          if (admin.currentOTP) {
+            admin.currentOTP = OTPUtils.incrementOTPAttempts(admin.currentOTP);
+            await admin.save();
+          }
+          return ResponseUtils.error(res, otpValidation.error, 400);
+        }
+      }
+      
+      // OTP is valid - generate access and refresh tokens
       const accessToken = TokenUtils.generateAccessToken(admin._id, 'super_admin');
       const refreshToken = TokenUtils.generateRefreshToken(admin._id, 'super_admin');
+      
+      // Clear OTP and temp token
+      admin.currentOTP = undefined;
+      admin.tempAuthToken = undefined;
       
       // Add session tracking
       const ipAddress = req.ip || req.connection.remoteAddress;
       const userAgent = req.get('User-Agent') || 'Unknown';
       await admin.addActiveSession(accessToken, new Date(Date.now() + 60 * 60 * 1000), ipAddress, userAgent);
+      
+      await admin.save();
       
       const tokens = {
         accessToken,
@@ -64,14 +150,11 @@ class SuperAdminController {
         expiresIn: process.env.JWT_ACCESS_EXPIRY || '1h'
       };
       
-      return ResponseUtils.success(res, 'Login successful', {
-        admin: admin.profile,
-        tokens
-      });
+      return ResponseUtils.authSuccess(res, 'Authentication successful', tokens, admin.profile);
       
     } catch (error) {
-      console.error('Admin login error:', error.message);
-      return ResponseUtils.internalError(res, 'Login failed');
+      console.error('OTP verification error:', error.message);
+      return ResponseUtils.internalError(res, 'OTP verification failed');
     }
   }
   
@@ -97,126 +180,28 @@ class SuperAdminController {
     }
   }
   
-  /**
-   * Change Password - PUT /v1/admin/change-password
-   */
-  static async changePassword(req, res) {
-    try {
-      const { error } = ValidationUtils.validatePasswordChange(req.body);
-      if (error) {
-        return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
-      }
-      
-      const { currentPassword, newPassword } = req.body;
-      const adminId = req.user.id;
-      
-      // Find admin
-      const admin = await SuperAdmin.findById(adminId);
-      if (!admin) {
-        return ResponseUtils.notFound(res, 'Admin not found');
-      }
-      
-      // Verify current password
-      const isCurrentPasswordValid = admin.comparePassword(currentPassword);
-      if (!isCurrentPasswordValid) {
-        return ResponseUtils.error(res, 'Current password is incorrect', 400);
-      }
-      
-      // Update password
-      admin.password = newPassword; // Will be hashed by pre-save middleware
-      await admin.save();
-      
-      return ResponseUtils.success(res, 'Password changed successfully');
-      
-    } catch (error) {
-      console.error('Change password error:', error.message);
-      return ResponseUtils.internalError(res, 'Failed to change password');
-    }
-  }
-  
-  /**
-   * Recover Password with Security Question - POST /v1/admin/recover-password
-   */
-  static async recoverPassword(req, res) {
-    try {
-      const { error } = ValidationUtils.validatePasswordRecovery(req.body);
-      if (error) {
-        return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
-      }
-      
-      const { username, securityAnswer, newPassword } = req.body;
-      const sanitizedUsername = ValidationUtils.sanitizeInput(username);
-      
-      // Find admin by username
-      const admin = await SuperAdmin.findByUsername(sanitizedUsername);
-      if (!admin) {
-        return ResponseUtils.error(res, 'Admin not found', 404);
-      }
-      
-      // Verify security answer
-      const isSecurityAnswerValid = admin.compareSecurityAnswer(securityAnswer);
-      if (!isSecurityAnswerValid) {
-        return ResponseUtils.error(res, 'Security answer is incorrect', 400);
-      }
-      
-      // Update password
-      admin.password = newPassword; // Will be hashed by pre-save middleware
-      admin.loginAttempts = 0; // Reset any login attempts
-      admin.lockUntil = undefined; // Remove any lock
-      
-      await admin.save();
-      
-      return ResponseUtils.success(res, 'Password has been reset successfully');
-      
-    } catch (error) {
-      console.error('Password recovery error:', error.message);
-      return ResponseUtils.internalError(res, 'Failed to recover password');
-    }
-  }
-  
-  /**
-   * Get Security Question - POST /v1/admin/security-question
-   */
-  static async getSecurityQuestion(req, res) {
-    try {
-      const { error } = ValidationUtils.validateUsername(req.body);
-      if (error) {
-        return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
-      }
-      
-      const { username } = req.body;
-      const sanitizedUsername = ValidationUtils.sanitizeInput(username);
-      
-      // Find admin by username
-      const admin = await SuperAdmin.findByUsername(sanitizedUsername);
-      if (!admin) {
-        // Don't reveal if admin exists or not for security
-        return ResponseUtils.success(res, 'Security question retrieved', {
-          question: 'Hi, what is your bday?'
-        });
-      }
-      
-      return ResponseUtils.success(res, 'Security question retrieved', {
-        question: admin.securityQuestion.question
-      });
-      
-    } catch (error) {
-      console.error('Get security question error:', error.message);
-      return ResponseUtils.internalError(res, 'Failed to retrieve security question');
-    }
-  }
   
   /**
    * Admin Logout - POST /v1/admin/logout
    */
   static async logout(req, res) {
     try {
-      const adminId = req.user.id;
-      const token = req.token; // Assuming we pass the token in middleware
+      const authHeader = req.header('Authorization');
       
-      // Find admin and remove active session
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return ResponseUtils.error(res, 'Token required for logout', 400);
+      }
+      
+      const token = TokenUtils.extractTokenFromHeader(authHeader);
+      const adminId = req.user.id;
+      
+      // Find admin and blacklist the token
       const admin = await SuperAdmin.findById(adminId);
       if (admin) {
+        // Get token expiry
+        const tokenExpiry = TokenUtils.getTokenExpiryDate(token);
+        await admin.blacklistToken(token, tokenExpiry);
+        // Also remove from active sessions
         await admin.removeActiveSession(token);
       }
       
@@ -244,17 +229,12 @@ class SuperAdminController {
         return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
       }
       
-      const { username, email, password, securityAnswer } = req.body;
+      const { username, email } = req.body;
       
       // Create super admin
       const admin = new SuperAdmin({
         username: username.toLowerCase().trim(),
-        email: email.toLowerCase().trim(),
-        password,
-        securityQuestion: {
-          question: 'Hi, what is your bday?',
-          answer: securityAnswer
-        }
+        email: email.toLowerCase().trim()
       });
       
       await admin.save();

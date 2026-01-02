@@ -198,7 +198,7 @@ class ValidationUtils {
     return schema.validate(data, { abortEarly: false });
   }
 
-  // Admin creation validation
+  // Admin creation validation (email and username only, no password)
   static validateAdminCreation(data) {
     const schema = Joi.object({
       username: Joi.string()
@@ -212,21 +212,7 @@ class ValidationUtils {
           'string.max': 'Username cannot exceed 20 characters',
           'any.required': 'Username is required'
         }),
-      email: this.emailSchema,
-      password: Joi.string()
-        .min(8)
-        .max(128)
-        .required()
-        .messages({
-          'string.min': 'Password must be at least 8 characters long',
-          'string.max': 'Password must not exceed 128 characters',
-          'any.required': 'Password is required'
-        }),
-      securityAnswer: Joi.string()
-        .required()
-        .messages({
-          'any.required': 'Security answer is required'
-        })
+      email: this.emailSchema
     });
 
     return schema.validate(data, { abortEarly: false });

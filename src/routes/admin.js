@@ -25,8 +25,6 @@ const router = express.Router();
  *             required:
  *               - username
  *               - email
- *               - password
- *               - securityAnswer
  *             properties:
  *               username:
  *                 type: string
@@ -38,14 +36,6 @@ const router = express.Router();
  *                 type: string
  *                 format: email
  *                 example: "admin@wellio.com"
- *               password:
- *                 type: string
- *                 minLength: 8
- *                 example: "SecureAdminPassword123"
- *               securityAnswer:
- *                 type: string
- *                 example: "10092003"
- *                 description: "Answer to 'Hi, what is your bday?'"
  *     responses:
  *       201:
  *         description: Super admin created successfully
@@ -58,7 +48,7 @@ router.post('/setup', SuperAdminController.createInitialAdmin);
  * @swagger
  * /v1/admin/login:
  *   post:
- *     summary: Super admin login
+ *     summary: Super admin login (sends OTP to email)
  *     tags: [Super Admin Authentication]
  *     requestBody:
  *       required: true
@@ -67,32 +57,31 @@ router.post('/setup', SuperAdminController.createInitialAdmin);
  *           schema:
  *             type: object
  *             required:
- *               - username
- *               - password
+ *               - email
  *             properties:
- *               username:
+ *               email:
  *                 type: string
- *                 example: "wellio_admin"
- *               password:
- *                 type: string
- *                 example: "SecureAdminPassword123"
+ *                 format: email
+ *                 example: "admin@wellio.com"
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: OTP sent successfully
  *       400:
- *         description: Invalid credentials
+ *         description: Invalid email or validation error
  *       403:
  *         description: Account disabled
- *       423:
- *         description: Account locked
+ *       404:
+ *         description: Admin not found
+ *       500:
+ *         description: Failed to send OTP
  */
 router.post('/login', SuperAdminController.login);
 
 /**
  * @swagger
- * /v1/admin/security-question:
+ * /v1/admin/verify-otp:
  *   post:
- *     summary: Get security question for password recovery
+ *     summary: Verify OTP and complete admin authentication
  *     tags: [Super Admin Authentication]
  *     requestBody:
  *       required: true
@@ -101,54 +90,29 @@ router.post('/login', SuperAdminController.login);
  *           schema:
  *             type: object
  *             required:
- *               - username
+ *               - token
+ *               - otp
  *             properties:
- *               username:
+ *               token:
  *                 type: string
- *                 example: "wellio_admin"
+ *                 description: 1F authentication token from login response
+ *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *               otp:
+ *                 type: string
+ *                 pattern: "^[0-9]{6}$"
+ *                 description: 6-digit OTP received via email
+ *                 example: "123456"
  *     responses:
  *       200:
- *         description: Security question retrieved
- */
-router.post('/security-question', SuperAdminController.getSecurityQuestion);
-
-/**
- * @swagger
- * /v1/admin/recover-password:
- *   post:
- *     summary: Recover password using security question
- *     tags: [Super Admin Authentication]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - username
- *               - securityAnswer
- *               - newPassword
- *             properties:
- *               username:
- *                 type: string
- *                 example: "wellio_admin"
- *               securityAnswer:
- *                 type: string
- *                 example: "10092003"
- *                 description: "Answer to 'Hi, what is your bday?'"
- *               newPassword:
- *                 type: string
- *                 minLength: 8
- *                 example: "NewSecurePassword123"
- *     responses:
- *       200:
- *         description: Password reset successfully
+ *         description: Authentication successful
  *       400:
- *         description: Invalid security answer
+ *         description: Invalid OTP or validation error
+ *       401:
+ *         description: Invalid or expired 1F token
  *       404:
  *         description: Admin not found
  */
-router.post('/recover-password', SuperAdminController.recoverPassword);
+router.post('/verify-otp', SuperAdminController.verifyOTP);
 
 // =================
 // AUTHENTICATED ADMIN ROUTES
@@ -169,39 +133,6 @@ router.post('/recover-password', SuperAdminController.recoverPassword);
  *         description: Unauthorized
  */
 router.get('/profile', authMiddleware.requireSuperAdmin, SuperAdminController.getProfile);
-
-/**
- * @swagger
- * /v1/admin/change-password:
- *   put:
- *     summary: Change admin password
- *     tags: [Super Admin Profile]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - currentPassword
- *               - newPassword
- *             properties:
- *               currentPassword:
- *                 type: string
- *                 example: "CurrentPassword123"
- *               newPassword:
- *                 type: string
- *                 minLength: 8
- *                 example: "NewSecurePassword123"
- *     responses:
- *       200:
- *         description: Password changed successfully
- *       400:
- *         description: Current password incorrect
- */
-router.put('/change-password', authMiddleware.requireSuperAdmin, SuperAdminController.changePassword);
 
 /**
  * @swagger
