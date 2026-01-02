@@ -98,9 +98,17 @@ superAdminSchema.pre('save', async function(next) {
       }
     }
     
-    // Hash security answer if modified
+    // Hash security answer if modified (but only if it's not already hashed)
     if (this.isModified('securityQuestion.answer')) {
-      this.securityQuestion.answer = PasswordUtils.hashPasswordSHA256(this.securityQuestion.answer);
+      const answer = this.securityQuestion.answer;
+      // Check if already hashed (64 hex chars)
+      const isAlreadyHashed = answer && typeof answer === 'string' && answer.length === 64 && /^[a-f0-9]+$/i.test(answer);
+      
+      if (!isAlreadyHashed) {
+        // Convert to string and hash
+        const answerString = String(answer).trim();
+        this.securityQuestion.answer = PasswordUtils.hashPasswordSHA256(answerString);
+      }
     }
     
     next();
@@ -116,7 +124,41 @@ superAdminSchema.methods.comparePassword = function(candidatePassword) {
 
 // Method to compare security answer
 superAdminSchema.methods.compareSecurityAnswer = function(candidateAnswer) {
-  return PasswordUtils.verifyPasswordSHA256(candidateAnswer, this.securityQuestion.answer);
+  const storedAnswer = this.securityQuestion.answer;
+  
+  // Check if stored answer is hashed (SHA256 produces 64 char hex string)
+  const isHashed = storedAnswer && typeof storedAnswer === 'string' && storedAnswer.length === 64 && /^[a-f0-9]+$/i.test(storedAnswer);
+  
+  if (isHashed) {
+    // Normal comparison: compare hashed candidate with stored hash
+    return PasswordUtils.verifyPasswordSHA256(candidateAnswer, storedAnswer);
+  } else {
+    // Plain text comparison: handle both string and number
+    const candidateString = String(candidateAnswer).trim();
+    const storedString = String(storedAnswer).trim();
+    
+    // Compare as strings
+    if (candidateString === storedString) {
+      // If match found and stored is plain text, hash it for future use
+      const candidateHash = PasswordUtils.hashPasswordSHA256(candidateString);
+      this.securityQuestion.answer = candidateHash;
+      this.save().catch(err => console.error('Failed to update security answer hash:', err));
+      return true;
+    }
+    
+    // Also try comparing as numbers (in case one is "221009" and other is 221009)
+    const candidateNum = Number(candidateString);
+    const storedNum = Number(storedString);
+    if (!isNaN(candidateNum) && !isNaN(storedNum) && candidateNum === storedNum) {
+      // If match found and stored is plain text, hash it for future use
+      const candidateHash = PasswordUtils.hashPasswordSHA256(candidateString);
+      this.securityQuestion.answer = candidateHash;
+      this.save().catch(err => console.error('Failed to update security answer hash:', err));
+      return true;
+    }
+    
+    return false;
+  }
 };
 
 // Method to handle failed login attempts
