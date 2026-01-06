@@ -1,6 +1,5 @@
 const express = require('express');
-const EmailTemplateController = require('../controllers/emailTemplateController');
-const EmailBroadcastController = require('../controllers/emailBroadcastController');
+const { EmailTemplateController, EmailBroadcastController } = require('../controllers/admin');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
@@ -273,4 +272,5 @@ router.get('/email-broadcasts/:id/metrics', EmailBroadcastController.getBroadcas
 router.get('/email-subscriptions/count', EmailBroadcastController.getSubscriberCount);
 
 module.exports = router;
+
 

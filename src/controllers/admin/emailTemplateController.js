@@ -1,6 +1,6 @@
-const EmailTemplate = require('../models/EmailTemplate');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
+const EmailTemplate = require('../../models/EmailTemplate');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
 
 /**
  * Email Template Controller
@@ -176,4 +176,5 @@ class EmailTemplateController {
 }
 
 module.exports = EmailTemplateController;
+
 

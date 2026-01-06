@@ -1,5 +1,5 @@
 const express = require('express');
-const PushController = require('../controllers/pushController');
+const { PushController } = require('../controllers/system');
 const authMiddleware = require('../middleware/auth');
 const rateLimiter = require('../middleware/rateLimiter');
 

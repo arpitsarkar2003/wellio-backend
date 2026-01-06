@@ -1,7 +1,7 @@
 const axios = require('axios');
-const AiChatSession = require('../models/AiChatSession');
-const AiChatMessage = require('../models/AiChatMessage');
-const ResponseUtils = require('../utils/responseUtils');
+const AiChatSession = require('../../models/AiChatSession');
+const AiChatMessage = require('../../models/AiChatMessage');
+const ResponseUtils = require('../../utils/responseUtils');
 // ===========================
 // PROVIDER CONFIG (OpenRouter)
 // ===========================

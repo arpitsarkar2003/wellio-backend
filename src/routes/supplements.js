@@ -1,5 +1,5 @@
 const express = require('express');
-const SupplementController = require('../controllers/supplementController');
+const { SupplementController } = require('../controllers/tracking');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();

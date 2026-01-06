@@ -24,3 +24,6 @@ emailSubscriptionSchema.index({ isActive: 1, email: 1 });
 
 module.exports = mongoose.model('EmailSubscription', emailSubscriptionSchema);
 
+
+
+

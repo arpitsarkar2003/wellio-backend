@@ -1,5 +1,5 @@
 const express = require('express');
-const PolicyController = require('../controllers/policyController');
+const { PolicyController } = require('../controllers/admin');
 
 const router = express.Router();
 

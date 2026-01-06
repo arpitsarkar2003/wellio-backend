@@ -1,9 +1,9 @@
-const SuperAdmin = require('../models/SuperAdmin');
-const TokenUtils = require('../utils/tokenUtils');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
-const OTPUtils = require('../utils/otpUtils');
-const EmailUtils = require('../utils/emailUtils');
+const SuperAdmin = require('../../models/SuperAdmin');
+const TokenUtils = require('../../utils/tokenUtils');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
+const OTPUtils = require('../../utils/otpUtils');
+const EmailUtils = require('../../utils/emailUtils');
 
 /**
  * Super Admin Management Controllers

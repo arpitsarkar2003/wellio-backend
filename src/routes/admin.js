@@ -1,7 +1,5 @@
 const express = require('express');
-const SuperAdminController = require('../controllers/superAdminController');
-const CompanyController = require('../controllers/companyController');
-const PolicyController = require('../controllers/policyController');
+const { SuperAdminController, CompanyController, PolicyController, AdminUserController } = require('../controllers/admin');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
@@ -475,5 +473,323 @@ router.get('/policy/stats', authMiddleware.requireSuperAdmin, PolicyController.g
 router.get('/policy/:id', authMiddleware.requireSuperAdmin, PolicyController.getPolicyById);
 router.patch('/policy/:id/status', authMiddleware.requireSuperAdmin, PolicyController.updatePolicyStatus);
 router.delete('/policy/:id', authMiddleware.requireSuperAdmin, PolicyController.deletePolicy);
+
+// =================
+// USER MANAGEMENT
+// =================
+
+/**
+ * @swagger
+ * /v1/admin/users:
+ *   get:
+ *     summary: List all users with filtering and pagination
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by name, email, username, or phone number
+ *       - in: query
+ *         name: isVerified
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: isPhoneVerified
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: isProfileCompleted
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: isGoogleUser
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, updatedAt, lastLogin, name, email]
+ *           default: createdAt
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ */
+router.get('/users', authMiddleware.requireSuperAdmin, AdminUserController.listUsers);
+
+/**
+ * @swagger
+ * /v1/admin/users/statistics:
+ *   get:
+ *     summary: Get user statistics
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: User statistics retrieved successfully
+ */
+router.get('/users/statistics', authMiddleware.requireSuperAdmin, AdminUserController.getUserStatistics);
+
+/**
+ * @swagger
+ * /v1/admin/users/{userId}:
+ *   get:
+ *     summary: Get user details
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User details retrieved successfully
+ *       404:
+ *         description: User not found
+ */
+router.get('/users/:userId', authMiddleware.requireSuperAdmin, AdminUserController.getUserDetails);
+
+/**
+ * @swagger
+ * /v1/admin/users/{userId}:
+ *   put:
+ *     summary: Update user profile
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *               isVerified:
+ *                 type: boolean
+ *               isPhoneVerified:
+ *                 type: boolean
+ *               isProfileCompleted:
+ *                 type: boolean
+ *               profile:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: User profile updated successfully
+ *       404:
+ *         description: User not found
+ *       409:
+ *         description: Email or username already exists
+ */
+router.put('/users/:userId', authMiddleware.requireSuperAdmin, AdminUserController.updateUserProfile);
+
+/**
+ * @swagger
+ * /v1/admin/users/{userId}/status:
+ *   patch:
+ *     summary: Activate or deactivate user account
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User status updated successfully
+ *       404:
+ *         description: User not found
+ */
+router.patch('/users/:userId/status', authMiddleware.requireSuperAdmin, AdminUserController.updateUserStatus);
+
+/**
+ * @swagger
+ * /v1/admin/users/{userId}:
+ *   delete:
+ *     summary: Delete user account (soft delete)
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: deleteData
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: If true, delete all associated data
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Reason for deletion
+ *               deleteData:
+ *                 type: boolean
+ *                 description: If true, delete all associated data
+ *     responses:
+ *       200:
+ *         description: User account deleted successfully
+ *       400:
+ *         description: User already deleted
+ *       404:
+ *         description: User not found
+ */
+router.delete('/users/:userId', authMiddleware.requireSuperAdmin, AdminUserController.deleteUser);
+
+/**
+ * @swagger
+ * /v1/admin/users/{userId}/reset-password:
+ *   post:
+ *     summary: Reset user password
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               sendEmail:
+ *                 type: boolean
+ *                 default: false
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset initiated successfully
+ *       404:
+ *         description: User not found
+ */
+router.post('/users/:userId/reset-password', authMiddleware.requireSuperAdmin, AdminUserController.resetUserPassword);
+
+/**
+ * @swagger
+ * /v1/admin/users/{userId}/verify:
+ *   post:
+ *     summary: Verify user account (email or phone)
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               verifyEmail:
+ *                 type: boolean
+ *                 default: false
+ *               verifyPhone:
+ *                 type: boolean
+ *                 default: false
+ *     responses:
+ *       200:
+ *         description: User account verified successfully
+ *       404:
+ *         description: User not found
+ */
+router.post('/users/:userId/verify', authMiddleware.requireSuperAdmin, AdminUserController.verifyUser);
 
 module.exports = router;

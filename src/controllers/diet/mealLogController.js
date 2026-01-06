@@ -1,6 +1,6 @@
-const MealLog = require('../models/MealLog');
-const DietPlanService = require('../services/dietPlanService');
-const ResponseUtils = require('../utils/responseUtils');
+const MealLog = require('../../models/MealLog');
+const DietPlanService = require('../../services/dietPlanService');
+const ResponseUtils = require('../../utils/responseUtils');
 
 class MealLogController {
 

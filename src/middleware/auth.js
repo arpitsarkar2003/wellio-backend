@@ -72,6 +72,11 @@ class AuthMiddleware {
       if (!user) {
         return ResponseUtils.unauthorized(res, 'User not found');
       }
+
+      // Check if user account is active
+      if (user.isActive === false) {
+        return ResponseUtils.forbidden(res, 'Your account has been deactivated. Please contact support.');
+      }
       
       // Check if token is blacklisted
       if (user.isTokenBlacklisted(token)) {

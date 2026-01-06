@@ -1,6 +1,6 @@
-const Policy = require('../models/Policy');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
+const Policy = require('../../models/Policy');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
 
 /**
  * Policy Management Controllers (Privacy Policy & Terms & Conditions)

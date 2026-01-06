@@ -1,6 +1,6 @@
-const SupplementService = require('../services/supplementService');
-const ResponseUtils = require('../utils/responseUtils');
-const ValidationUtils = require('../utils/validationUtils');
+const SupplementService = require('../../services/supplementService');
+const ResponseUtils = require('../../utils/responseUtils');
+const ValidationUtils = require('../../utils/validationUtils');
 
 class SupplementController {
 

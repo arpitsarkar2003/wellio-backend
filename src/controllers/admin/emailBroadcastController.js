@@ -1,9 +1,9 @@
-const EmailBroadcast = require('../models/EmailBroadcast');
-const EmailTemplate = require('../models/EmailTemplate');
-const EmailSubscription = require('../models/EmailSubscription');
-const EmailBroadcastService = require('../services/emailBroadcastService');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
+const EmailBroadcast = require('../../models/EmailBroadcast');
+const EmailTemplate = require('../../models/EmailTemplate');
+const EmailSubscription = require('../../models/EmailSubscription');
+const EmailBroadcastService = require('../../services/emailBroadcastService');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
 
 /**
  * Email Broadcast Controller
@@ -190,4 +190,5 @@ class EmailBroadcastController {
 }
 
 module.exports = EmailBroadcastController;
+
 

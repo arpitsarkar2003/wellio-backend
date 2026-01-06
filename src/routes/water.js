@@ -1,5 +1,5 @@
 const express = require('express');
-const WaterController = require('../controllers/waterController');
+const { WaterController } = require('../controllers/tracking');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();

@@ -1,7 +1,7 @@
-const User = require('../models/User');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
-const EmailUtils = require('../utils/emailUtils');
+const User = require('../../models/User');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
+const EmailUtils = require('../../utils/emailUtils');
 
 /**
  * User Profile Management Controllers

@@ -427,3 +427,6 @@ async function pollBroadcastStatus(broadcastId) {
 - **Template HTML:** Required, non-empty, validated before saving
 - **Uniqueness:** Email subscriptions enforced at database level (unique index)
 
+
+
+

@@ -159,6 +159,34 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordExpires: {
     type: Date
+  },
+  // Account activation/deactivation fields
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  deactivatedAt: {
+    type: Date
+  },
+  deactivatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SuperAdmin'
+  },
+  deactivationReason: {
+    type: String,
+    trim: true
+  },
+  // Soft delete fields
+  deletedAt: {
+    type: Date
+  },
+  deletedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SuperAdmin'
+  },
+  deletionReason: {
+    type: String,
+    trim: true
   }
 }, {
   timestamps: true

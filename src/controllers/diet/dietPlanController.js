@@ -1,6 +1,6 @@
-const DietPlanService = require('../services/dietPlanService');
-const ResponseUtils = require('../utils/responseUtils');
-const ValidationUtils = require('../utils/validationUtils');
+const DietPlanService = require('../../services/dietPlanService');
+const ResponseUtils = require('../../utils/responseUtils');
+const ValidationUtils = require('../../utils/validationUtils');
 
 class DietPlanController {
 

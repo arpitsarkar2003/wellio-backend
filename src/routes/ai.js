@@ -1,5 +1,5 @@
 const express = require('express');
-const AiController = require('../controllers/aiController');
+const { AiController } = require('../controllers/ai');
 
 const router = express.Router();
 

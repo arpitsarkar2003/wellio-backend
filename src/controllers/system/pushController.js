@@ -1,8 +1,8 @@
-const PushToken = require('../models/PushToken');
-const NotificationHistory = require('../models/NotificationHistory');
-const PushService = require('../services/pushService');
-const ResponseUtils = require('../utils/responseUtils');
-const ValidationUtils = require('../utils/validationUtils');
+const PushToken = require('../../models/PushToken');
+const NotificationHistory = require('../../models/NotificationHistory');
+const PushService = require('../../services/pushService');
+const ResponseUtils = require('../../utils/responseUtils');
+const ValidationUtils = require('../../utils/validationUtils');
 
 /**
  * Push Notification Controllers

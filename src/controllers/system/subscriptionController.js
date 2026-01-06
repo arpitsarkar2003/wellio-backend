@@ -1,6 +1,6 @@
-const EmailSubscription = require('../models/EmailSubscription');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
+const EmailSubscription = require('../../models/EmailSubscription');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
 
 /**
  * Email Subscription Controller
@@ -73,4 +73,5 @@ class SubscriptionController {
 }
 
 module.exports = SubscriptionController;
+
 

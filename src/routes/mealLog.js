@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const MealLogController = require('../controllers/mealLogController');
+const { MealLogController } = require('../controllers/diet');
 const AuthMiddleware = require('../middleware/auth');
 
 // All routes require authentication

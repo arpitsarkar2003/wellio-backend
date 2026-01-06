@@ -1,5 +1,5 @@
 const express = require('express');
-const SubscriptionController = require('../controllers/subscriptionController');
+const { SubscriptionController } = require('../controllers/system');
 
 const router = express.Router();
 
@@ -33,4 +33,5 @@ const router = express.Router();
 router.post('/', SubscriptionController.subscribe);
 
 module.exports = router;
+
 

@@ -1,12 +1,12 @@
-const User = require('../models/User');
-const TokenUtils = require('../utils/tokenUtils');
-const OTPUtils = require('../utils/otpUtils');
-const EmailUtils = require('../utils/emailUtils');
-const PasswordUtils = require('../utils/passwordUtils');
-const GoogleAuthUtils = require('../utils/googleAuth');
-const FirebaseAdmin = require('../utils/firebaseAdmin');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
+const User = require('../../models/User');
+const TokenUtils = require('../../utils/tokenUtils');
+const OTPUtils = require('../../utils/otpUtils');
+const EmailUtils = require('../../utils/emailUtils');
+const PasswordUtils = require('../../utils/passwordUtils');
+const GoogleAuthUtils = require('../../utils/googleAuth');
+const FirebaseAdmin = require('../../utils/firebaseAdmin');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
 
 /**
  * Authentication Controllers
@@ -99,6 +99,11 @@ class AuthController {
         return ResponseUtils.error(res, 'Invalid credentials', 400);
       }
 
+      // Check if user account is active
+      if (user.isActive === false) {
+        return ResponseUtils.forbidden(res, 'Your account has been deactivated. Please contact support.');
+      }
+
       // Verify password using SHA-256
       const isPasswordValid = PasswordUtils.verifyPasswordSHA256(password, user.password);
       if (!isPasswordValid) {
@@ -166,6 +171,11 @@ class AuthController {
       const user = await User.findById(decoded.userId);
       if (!user) {
         return ResponseUtils.notFound(res, 'User not found');
+      }
+
+      // Check if user account is active
+      if (user.isActive === false) {
+        return ResponseUtils.forbidden(res, 'Your account has been deactivated. Please contact support.');
       }
 
       // Check if temp token matches

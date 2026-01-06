@@ -1,7 +1,7 @@
-const Company = require('../models/Company');
-const ValidationUtils = require('../utils/validationUtils');
-const ResponseUtils = require('../utils/responseUtils');
-const ImgBBUtils = require('../utils/imgbbUtils');
+const Company = require('../../models/Company');
+const ValidationUtils = require('../../utils/validationUtils');
+const ResponseUtils = require('../../utils/responseUtils');
+const ImgBBUtils = require('../../utils/imgbbUtils');
 
 /**
  * Company/Website Management Controllers (Super Admin Only)
@@ -321,7 +321,7 @@ class CompanyController {
       const { email } = req.body;
       
       // Send email using emailUtils
-      const EmailUtils = require('../utils/emailUtils');
+      const EmailUtils = require('../../utils/emailUtils');
       const emailResult = await EmailUtils.sendAnonymousEmail(email);
       
       if (!emailResult.success) {

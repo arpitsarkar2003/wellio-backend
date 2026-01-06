@@ -1,6 +1,6 @@
-const WaterService = require('../services/waterService');
-const ResponseUtils = require('../utils/responseUtils');
-const ValidationUtils = require('../utils/validationUtils');
+const WaterService = require('../../services/waterService');
+const ResponseUtils = require('../../utils/responseUtils');
+const ValidationUtils = require('../../utils/validationUtils');
 
 class WaterController {
 

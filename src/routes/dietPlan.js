@@ -1,10 +1,8 @@
 const express = require('express');
-const DietPlanController = require('../controllers/dietPlanController');
+const { DietPlanController, DietTemplateController } = require('../controllers/diet');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
-
-const DietTemplateController = require('../controllers/dietTemplateController');
 
 /**
  * @swagger
