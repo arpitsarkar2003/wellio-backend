@@ -65,14 +65,27 @@ const subscriptionRoutes = require('./src/routes/subscription');
 const emailAdminRoutes = require('./src/routes/email');
 
 // Swagger Documentation
-app.use('/api-docs', swaggerUi.serve);
-app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
+// Serve Swagger JSON spec
+app.get('/api-docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+// Swagger UI setup
+// For Vercel/serverless: swaggerUi.serve must handle all /api-docs/* requests
+const swaggerUiOptions = {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: "Wellio API Documentation",
   swaggerOptions: {
     persistAuthorization: true,
-  }
-}));
+    url: '/api-docs/swagger.json',
+    validatorUrl: null,
+  },
+};
+
+// Important: swaggerUi.serve must come before the setup route
+// It handles all static asset requests (CSS, JS, etc.) under /api-docs/*
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 // Welcome route
 app.get('/', (req, res) => {

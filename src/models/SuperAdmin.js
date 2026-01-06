@@ -168,6 +168,12 @@ superAdminSchema.virtual('profile').get(function() {
   };
 });
 
+// Method to get active session count
+superAdminSchema.methods.getActiveSessionCount = function() {
+  const now = new Date();
+  return this.activeSessions.filter(session => session.expiresAt > now).length;
+};
+
 // Ensure virtual fields are serialized
 superAdminSchema.set('toJSON', {
   virtuals: true,
@@ -175,7 +181,8 @@ superAdminSchema.set('toJSON', {
     delete ret.currentOTP;
     delete ret.tempAuthToken;
     delete ret.blacklistedTokens;
-    delete ret.activeSessions;
+    delete ret.password;
+    delete ret.securityAnswer;
     delete ret.__v;
     return ret;
   }

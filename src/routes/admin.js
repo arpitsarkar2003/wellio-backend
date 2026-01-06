@@ -792,4 +792,247 @@ router.post('/users/:userId/reset-password', authMiddleware.requireSuperAdmin, A
  */
 router.post('/users/:userId/verify', authMiddleware.requireSuperAdmin, AdminUserController.verifyUser);
 
+// =================
+// SUPER ADMIN MANAGEMENT
+// =================
+
+/**
+ * @swagger
+ * /v1/admin/admins:
+ *   get:
+ *     summary: List all super admin accounts
+ *     tags: [Super Admin Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *       - in: query
+ *         name: isActive
+ *         schema:
+ *           type: boolean
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, updatedAt, lastLogin, username, email]
+ *           default: createdAt
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *     responses:
+ *       200:
+ *         description: Super admins retrieved successfully
+ */
+router.get('/admins', authMiddleware.requireSuperAdmin, SuperAdminController.listAdmins);
+
+/**
+ * @swagger
+ * /v1/admin/admins/statistics:
+ *   get:
+ *     summary: Get super admin statistics
+ *     tags: [Super Admin Management]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Super admin statistics retrieved successfully
+ */
+router.get('/admins/statistics', authMiddleware.requireSuperAdmin, SuperAdminController.getAdminStatistics);
+
+/**
+ * @swagger
+ * /v1/admin/admins:
+ *   post:
+ *     summary: Create a new super admin account
+ *     tags: [Super Admin Management]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - email
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               securityQuestion:
+ *                 type: string
+ *               securityAnswer:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Super admin created successfully
+ *       409:
+ *         description: Username or email already exists
+ */
+router.post('/admins', authMiddleware.requireSuperAdmin, SuperAdminController.createAdmin);
+
+/**
+ * @swagger
+ * /v1/admin/admins/{adminId}:
+ *   put:
+ *     summary: Update super admin details
+ *     tags: [Super Admin Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: adminId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               securityQuestion:
+ *                 type: string
+ *               securityAnswer:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Super admin updated successfully
+ *       400:
+ *         description: Cannot update own username/email
+ *       404:
+ *         description: Super admin not found
+ *       409:
+ *         description: Username or email already exists
+ */
+router.put('/admins/:adminId', authMiddleware.requireSuperAdmin, SuperAdminController.updateAdmin);
+
+/**
+ * @swagger
+ * /v1/admin/admins/{adminId}/status:
+ *   patch:
+ *     summary: Activate or deactivate super admin account
+ *     tags: [Super Admin Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: adminId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isActive
+ *             properties:
+ *               isActive:
+ *                 type: boolean
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Super admin status updated successfully
+ *       400:
+ *         description: Cannot deactivate own account
+ *       404:
+ *         description: Super admin not found
+ */
+router.patch('/admins/:adminId/status', authMiddleware.requireSuperAdmin, SuperAdminController.updateAdminStatus);
+
+/**
+ * @swagger
+ * /v1/admin/admins/{adminId}:
+ *   delete:
+ *     summary: Delete super admin account (soft delete)
+ *     tags: [Super Admin Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: adminId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Super admin deleted successfully
+ *       400:
+ *         description: Cannot delete own account or last active admin
+ *       404:
+ *         description: Super admin not found
+ */
+router.delete('/admins/:adminId', authMiddleware.requireSuperAdmin, SuperAdminController.deleteAdmin);
+
+/**
+ * @swagger
+ * /v1/admin/admins/{adminId}/reset-password:
+ *   post:
+ *     summary: Reset super admin password
+ *     tags: [Super Admin Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: adminId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - newPassword
+ *             properties:
+ *               newPassword:
+ *                 type: string
+ *               sendEmail:
+ *                 type: boolean
+ *                 default: false
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       404:
+ *         description: Super admin not found
+ */
+router.post('/admins/:adminId/reset-password', authMiddleware.requireSuperAdmin, SuperAdminController.resetAdminPassword);
+
 module.exports = router;
