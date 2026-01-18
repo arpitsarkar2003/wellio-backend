@@ -152,6 +152,13 @@ class ValidationUtils {
   // Profile update validation
   static validateProfileUpdate(data) {
     const schema = Joi.object({
+      age: Joi.number().min(1).max(120).allow(null).optional(),
+      height: Joi.number().min(1).max(300).allow(null).optional(),
+      weight: Joi.number().min(1).max(1000).allow(null).optional(),
+      gender: Joi.string().valid('male', 'female', 'other').allow('', null).optional(),
+      activityLevel: Joi.string().allow('', null).optional(),
+      dietaryGoal: Joi.string().allow('', null).optional(),
+      dietaryPreferences: Joi.array().items(Joi.string()).allow(null).optional(),
       phoneNumber: Joi.string()
         .pattern(/^\+?[1-9]\d{1,14}$/)
         .allow('', null)

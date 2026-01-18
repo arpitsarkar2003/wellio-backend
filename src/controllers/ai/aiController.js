@@ -1,6 +1,7 @@
 const axios = require('axios');
 const AiChatSession = require('../../models/AiChatSession');
 const AiChatMessage = require('../../models/AiChatMessage');
+const User = require('../../models/User');
 const ResponseUtils = require('../../utils/responseUtils');
 // ===========================
 // PROVIDER CONFIG (OpenRouter)
@@ -143,6 +144,74 @@ function buildConversationContext(previousMessages, currentPrompt) {
 
   return messages;
 }
+function humanizeValue(value) {
+  if (value === null || value === undefined) return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  return str
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatNumber(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return String(num);
+}
+
+function formatMetric(value, unit) {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num <= 0) return null;
+  return `${num}${unit}`;
+}
+
+function formatDietaryPreferences(preferences) {
+  if (Array.isArray(preferences)) {
+    const formatted = preferences
+      .map(humanizeValue)
+      .filter(Boolean);
+    return formatted.length > 0 ? formatted.join(', ') : null;
+  }
+  return humanizeValue(preferences);
+}
+
+function buildSystemPrompt(userProfile) {
+  const basePrompt = DIET_ASSISTANT_SYSTEM_PROMPT;
+  const hasAnyContext = !!(
+    userProfile &&
+    (userProfile.age ||
+      userProfile.height ||
+      userProfile.weight ||
+      userProfile.gender ||
+      userProfile.activityLevel ||
+      userProfile.dietaryGoal ||
+      (Array.isArray(userProfile.dietaryPreferences) &&
+        userProfile.dietaryPreferences.length > 0))
+  );
+
+  let contextBody = 'User Context: Not provided yet';
+  if (hasAnyContext) {
+    const age = formatNumber(userProfile.age);
+    const height = formatMetric(userProfile.height, 'cm');
+    const weight = formatMetric(userProfile.weight, 'kg');
+    const gender = humanizeValue(userProfile.gender);
+    const goal = humanizeValue(userProfile.dietaryGoal);
+    const activityLevel = humanizeValue(userProfile.activityLevel);
+    const dietaryPreferences = formatDietaryPreferences(userProfile.dietaryPreferences);
+
+    contextBody = [
+      `Age: ${age || 'Not provided yet'}`,
+      `Height: ${height || 'Not provided yet'}`,
+      `Weight: ${weight || 'Not provided yet'}`,
+      `Gender: ${gender || 'Not provided yet'}`,
+      `Goal: ${goal || 'Not provided yet'}`,
+      `Activity Level: ${activityLevel || 'Not provided yet'}`,
+      `Dietary Preferences: ${dietaryPreferences || 'Not provided yet'}`
+    ].join('\n\n');
+  }
+
+  return `${basePrompt}\n\nCURRENT USER CONTEXT:\n\n${contextBody}\n\nUse this context to personalize all advice (e.g., calorie calculations).\nThis context updates dynamically as the user's profile changes.`;
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -260,14 +329,15 @@ async function callOpenRouter(messagesWithSystemPrompt, options = {}) {
  * Call LLM (OpenRouter) with conversation history
  * 
  * @param {Array} conversationMessages - User/assistant message history
+ * @param {String} systemPrompt - System prompt to prepend
  * @returns {Object} - { reply, raw }
  */
-async function callLLM(conversationMessages) {
+async function callLLM(conversationMessages, systemPrompt = DIET_ASSISTANT_SYSTEM_PROMPT) {
   try {
     const messagesWithSystemPrompt = [
       {
         role: 'system',
-        content: DIET_ASSISTANT_SYSTEM_PROMPT,
+        content: systemPrompt,
       },
       ...conversationMessages,
     ];
@@ -392,12 +462,18 @@ class AiController {
         .sort({ createdAt: 1 })
         .select('role content')
         .lean();
+      // Fetch user profile for persistent context
+      const user = await User.findById(userId);
+      if (!user) {
+        return ResponseUtils.notFound(res, 'User not found');
+      }
+      const userProfile = user.fullProfile || user;
 
       // Build optimized conversation context with smart truncation
       const conversationContext = buildConversationContext(previousMessages, trimmedPrompt);
-
-      // Call LLM (system prompt is added inside callLLM, not stored in DB)
-      const { reply } = await callLLM(conversationContext);
+      // Call LLM with dynamic system prompt (not stored in DB)
+      const systemPrompt = buildSystemPrompt(userProfile);
+      const { reply } = await callLLM(conversationContext, systemPrompt);
 
       if (!reply || typeof reply !== 'string' || reply.trim().length === 0) {
         throw new Error('AI returned empty response');

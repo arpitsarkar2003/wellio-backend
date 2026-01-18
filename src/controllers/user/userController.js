@@ -56,6 +56,28 @@ class UserController {
       if (!user.profile) {
         user.profile = {};
       }
+      // Persistent user context fields
+      if (updateData.age !== undefined) {
+        user.age = updateData.age;
+      }
+      if (updateData.height !== undefined) {
+        user.height = updateData.height;
+      }
+      if (updateData.weight !== undefined) {
+        user.weight = updateData.weight;
+      }
+      if (updateData.gender !== undefined) {
+        user.gender = updateData.gender;
+      }
+      if (updateData.activityLevel !== undefined) {
+        user.activityLevel = updateData.activityLevel;
+      }
+      if (updateData.dietaryGoal !== undefined) {
+        user.dietaryGoal = updateData.dietaryGoal;
+      }
+      if (updateData.dietaryPreferences !== undefined) {
+        user.dietaryPreferences = updateData.dietaryPreferences;
+      }
 
       // Phone number
       if (updateData.phoneNumber !== undefined) {

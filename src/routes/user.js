@@ -95,6 +95,36 @@ router.get('/profile', authMiddleware.requireAuth, UserController.getProfile);
  *           schema:
  *             type: object
  *             properties:
+ *               age:
+ *                 type: number
+ *                 minimum: 1
+ *                 maximum: 120
+ *                 example: 25
+ *               height:
+ *                 type: number
+ *                 minimum: 1
+ *                 maximum: 300
+ *                 example: 180
+ *               weight:
+ *                 type: number
+ *                 minimum: 1
+ *                 maximum: 1000
+ *                 example: 75
+ *               gender:
+ *                 type: string
+ *                 enum: [male, female, other]
+ *                 example: "male"
+ *               activityLevel:
+ *                 type: string
+ *                 example: "sedentary"
+ *               dietaryGoal:
+ *                 type: string
+ *                 example: "muscle_gain"
+ *               dietaryPreferences:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["vegetarian", "keto"]
  *               phoneNumber:
  *                 type: string
  *                 pattern: '^\\+?[1-9]\\d{1,14}$'

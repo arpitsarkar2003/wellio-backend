@@ -50,6 +50,37 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  age: {
+    type: Number,
+    min: [1, 'Age must be greater than 0'],
+    max: [120, 'Age cannot exceed 120']
+  },
+  height: {
+    type: Number,
+    min: [1, 'Height must be greater than 0'],
+    max: [300, 'Height cannot exceed 300 cm']
+  },
+  weight: {
+    type: Number,
+    min: [1, 'Weight must be greater than 0'],
+    max: [1000, 'Weight cannot exceed 1000 kg']
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other']
+  },
+  activityLevel: {
+    type: String,
+    trim: true
+  },
+  dietaryGoal: {
+    type: String,
+    trim: true
+  },
+  dietaryPreferences: [{
+    type: String,
+    trim: true
+  }],
   // Phone verification fields
   phoneNumber: {
     type: String,
@@ -284,6 +315,13 @@ userSchema.virtual('fullProfile').get(function () {
     updatedAt: this.updatedAt,
     lastLogin: this.lastLogin,
     isProfileCompleted: this.isProfileCompleted,
+    age: this.age,
+    height: this.height,
+    weight: this.weight,
+    gender: this.gender,
+    activityLevel: this.activityLevel,
+    dietaryGoal: this.dietaryGoal,
+    dietaryPreferences: this.dietaryPreferences,
     profile: this.profile || {}
   };
 });
