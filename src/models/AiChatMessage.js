@@ -23,6 +23,35 @@ const aiChatMessageSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    // Message type: 'text', 'image', 'food_analysis'
+    type: {
+      type: String,
+      enum: ['text', 'image', 'food_analysis'],
+      default: 'text',
+    },
+    // Image attachment (for food images or other images)
+    imageUrl: {
+      type: String,
+      trim: true,
+    },
+    // Food analysis data (when type is 'food_analysis')
+    foodAnalysis: {
+      foodName: String,
+      visualDescription: String,
+      estimatedPortion: String,
+      nutrition: {
+        calories: Number,
+        protein: Number,
+        carbs: Number,
+        fats: Number,
+      },
+      clarificationMessage: String,
+    },
+    // Model used for this message (if AI generated)
+    modelUsed: {
+      type: String,
+      trim: true,
+    },
     // Optional metadata for debugging/analytics
     metadata: {
       type: Object,

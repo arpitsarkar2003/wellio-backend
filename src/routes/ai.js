@@ -1,5 +1,6 @@
 const express = require('express');
 const { AiController } = require('../controllers/ai');
+const { upload } = require('../middleware/fileUpload');
 
 const router = express.Router();
 
@@ -7,7 +8,8 @@ const router = express.Router();
  * @swagger
  * /v1/ai/chat:
  *   post:
- *     summary: Send a chat message (create new session or continue existing)
+ *     summary: Send a chat message or upload food image for analysis
+ *     description: Unified endpoint for text chat and food image recognition. Supports both JSON and multipart/form-data
  *     tags: [AI Chat]
  *     requestBody:
  *       required: true
@@ -29,9 +31,30 @@ const router = express.Router();
  *                 type: string
  *                 description: Optional - Include to continue an existing conversation
  *                 example: "60d5ec49f1b2c72b8c8e4f1b"
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: "60d5ec49f1b2c72b8c8e4f1a"
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Food image file (JPEG, PNG, WebP, GIF - max 5MB)
+ *               prompt:
+ *                 type: string
+ *                 description: Optional text message with the image
+ *                 example: "What's the nutrition in this meal?"
+ *               sessionId:
+ *                 type: string
+ *                 description: Optional - Include to continue an existing conversation
+ *                 example: "60d5ec49f1b2c72b8c8e4f1b"
  *     responses:
  *       200:
- *         description: Message sent successfully
+ *         description: Message sent or food analyzed successfully
  *         content:
  *           application/json:
  *             schema:
@@ -51,6 +74,62 @@ const router = express.Router();
  *                     reply:
  *                       type: string
  *                       description: AI response in markdown format
+ *                     userMessage:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         type:
+ *                           type: string
+ *                           enum: [text, image]
+ *                         content:
+ *                           type: string
+ *                         imageUrl:
+ *                           type: string
+ *                           nullable: true
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                     assistantMessage:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         type:
+ *                           type: string
+ *                           enum: [text, food_analysis]
+ *                         content:
+ *                           type: string
+ *                         imageUrl:
+ *                           type: string
+ *                           nullable: true
+ *                         foodAnalysis:
+ *                           type: object
+ *                           nullable: true
+ *                           properties:
+ *                             foodName:
+ *                               type: string
+ *                             visualDescription:
+ *                               type: string
+ *                             estimatedPortion:
+ *                               type: string
+ *                             nutrition:
+ *                               type: object
+ *                               properties:
+ *                                 calories:
+ *                                   type: number
+ *                                 protein:
+ *                                   type: number
+ *                                 carbs:
+ *                                   type: number
+ *                                 fats:
+ *                                   type: number
+ *                         modelUsed:
+ *                           type: string
+ *                           nullable: true
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
  *                     isNewSession:
  *                       type: boolean
  *       400:
@@ -58,7 +137,7 @@ const router = express.Router();
  *       404:
  *         description: Session not found
  */
-router.post('/chat', AiController.chat);
+router.post('/chat', upload.single('image'), AiController.chat);
 
 /**
  * @swagger
@@ -171,8 +250,34 @@ router.get('/sessions', AiController.getSessions);
  *                           role:
  *                             type: string
  *                             enum: [user, assistant]
+ *                           type:
+ *                             type: string
+ *                             enum: [text, image, food_analysis]
  *                           content:
  *                             type: string
+ *                           imageUrl:
+ *                             type: string
+ *                             nullable: true
+ *                           foodAnalysis:
+ *                             type: object
+ *                             nullable: true
+ *                             properties:
+ *                               foodName:
+ *                                 type: string
+ *                               nutrition:
+ *                                 type: object
+ *                                 properties:
+ *                                   calories:
+ *                                     type: number
+ *                                   protein:
+ *                                     type: number
+ *                                   carbs:
+ *                                     type: number
+ *                                   fats:
+ *                                     type: number
+ *                           modelUsed:
+ *                             type: string
+ *                             nullable: true
  *                           createdAt:
  *                             type: string
  *                             format: date-time

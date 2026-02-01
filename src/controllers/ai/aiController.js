@@ -3,18 +3,26 @@ const AiChatSession = require('../../models/AiChatSession');
 const AiChatMessage = require('../../models/AiChatMessage');
 const User = require('../../models/User');
 const ResponseUtils = require('../../utils/responseUtils');
+const imgbbService = require('../../services/imgbbService');
 // ===========================
 // PROVIDER CONFIG (OpenRouter)
 // ===========================
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const OPENROUTER_MODEL = 'xiaomi/mimo-v2-flash:free';
-const OPENROUTER_FALLBACK_MODEL = 'z-ai/glm-4.5-air:free';
-const OPENROUTER_FALLBACK_MODEL_2 = 'google/gemini-2.0-flash-exp:free';
+
+// Model Configuration (controlled via environment variables)
+// Text Chat Model (for diet plans and general chat)
+const OPENROUTER_MODEL = process.env.OPENROUTER_TEXT_MODEL || 'openai/gpt-oss-120b:free';
+
+// Vision Models (for food image recognition with fallback)
+// Using best free vision models to prevent hallucinations and "I can't see images" errors
+const VISION_MODEL_PRIMARY = process.env.OPENROUTER_VISION_MODEL || 'google/gemini-2.0-flash-lite-preview-02-05:free';
+const VISION_MODEL_FALLBACK = process.env.OPENROUTER_VISION_FALLBACK || 'google/gemini-2.0-pro-exp-02-05:free';
+
 const OPENROUTER_TIMEOUT_MS = 120000; // 2 minutes
 const OPENROUTER_GEN_PARAMS = {
   temperature: 0.4,
-  top_p: 0.9,      
+  top_p: 0.9,      
 };
 const OPENROUTER_REFERER = process.env.APP_URL || 'http://localhost';
 const OPENROUTER_TITLE = process.env.APP_NAME || 'Wellio Diet Assistant';
@@ -28,40 +36,30 @@ const OPENROUTER_TITLE = process.env.APP_NAME || 'Wellio Diet Assistant';
  * This is ALWAYS inserted as the first message in every LLM call
  * and is NEVER stored in the database
  */
-const DIET_ASSISTANT_SYSTEM_PROMPT = `You are a professional Diet & Nutrition Assistant specialized in creating healthy, balanced meal plans and providing evidence-based nutritional guidance.
+const DIET_ASSISTANT_SYSTEM_PROMPT = `You are Wellio AI, a friendly nutrition assistant. Keep responses conversational and natural - don't introduce yourself in every message.
 
-Your name is **Wellio AI**. Always introduce yourself as "Wellio AI" (never NutriBot or any other name).
+**Your job:**
+- Help with diet plans based on user goals (weight loss, muscle gain, maintenance)
+- Analyze food images and provide nutrition estimates
+- Give practical meal suggestions and tips
+- Answer nutrition questions casually
+- Label calorie/macro numbers as **estimates**
 
-**Your Core Responsibilities:**
-- Design safe, balanced diet plans based on user goals (weight loss, muscle gain, maintenance)
-- Recommend portion sizes and calorie guidelines
-- Suggest vegetarian meal options by default (unless user specifies non-vegetarian)
-- Provide macronutrient breakdowns (protein, carbs, fats)
-- Offer practical meal prep and grocery shopping tips
-- Answer questions about nutrition, vitamins, and healthy eating habits
-- Clearly label all calorie and macro numbers as **estimates**, not exact values
+**What you DON'T do:**
+1. **NO Medical Advice**: If asked about symptoms, conditions, or diagnoses → "I can't give medical advice - please see a healthcare professional."
+2. **NO Extreme Diets**: No <1200 cal/day diets or dangerous restrictions
+3. **NO Supplement Dosages**: Only mention if asked, always say "consult a doctor for dosages"
+4. **Safety**: If user mentions health conditions → remind them to work with a healthcare provider
 
-**STRICT LIMITATIONS (You MUST follow these):**
-1. **NO Medical Diagnosis**: Never diagnose medical conditions, allergies, or deficiencies. If a user asks about symptoms, thyroid issues, diabetes management, or medical concerns, respond: "I'm a nutrition assistant and cannot provide medical advice. Please consult a healthcare professional or registered dietitian for personalized medical guidance."
+**Tone:** Friendly, casual, helpful. Like texting a knowledgeable friend. Don't over-explain or be preachy.
 
-2. **NO Extreme Diets**: Avoid recommending very low-calorie diets (<1200 cal/day), extreme fasting, or unsustainable restrictions.
-
-3. **NO Supplement Prescriptions**: Only mention supplements if the user explicitly asks. Never prescribe dosages. Always suggest consulting a doctor.
-
-4. **Ask Clarifying Questions**: If critical information is missing (age, weight, height, activity level, dietary restrictions, allergies), ask the user before creating a plan.
-
-5. **Safety First**: If a user mentions health conditions (diabetes, heart disease, pregnancy, eating disorders), remind them to work with a healthcare provider.
-
-6. **Health-Adjacent Questions**: For symptoms, diagnoses, medications, lab values, or treatment advice, politely decline and direct the user to a healthcare professional.
-
-**Response Format:**
-- Use clear, well-structured **GitHub-flavored Markdown**
-- Use headings (##, ###), bullet lists, and tables
-- Make meal plans easy to read with clear sections for each day
-- Do NOT wrap your entire response in code fences or backticks
-- Be concise but thorough
-
-**Tone:** Professional, supportive, and encouraging. Help users make sustainable, healthy choices.`;
+**Mobile-First Formatting:**
+DO NOT use Markdown Tables (e.g., | Food | Calories |). Tables render poorly on mobile screens.
+Instead, use Bulleted Lists with bold keys for data.
+Example format:
+* **Greek Yogurt (200g):** 300 kcal
+* **Apple:** 180 kcal
+This ensures the data is always readable without horizontal scrolling.`;
 
 /**
  * Lightweight system prompt for title generation
@@ -73,8 +71,6 @@ const TITLE_GENERATOR_SYSTEM_PROMPT = `You are a title generator. Create a short
 // ===========================
 const MAX_CONTEXT_MESSAGES = 10; // Last 10 messages for context (to avoid token overflow)
 const THROTTLE_MS = 1500;
-const MAX_RETRIES = 3;
-const BACKOFF_BASE_MS = 400;
 
 const throttleMap = new Map();
 const titleCache = new Map();
@@ -82,6 +78,66 @@ const titleCache = new Map();
 // ===========================
 // HELPER FUNCTIONS
 // ===========================
+
+/**
+ * Extract JSON from AI response (handles cases where JSON is embedded in text)
+ * @param {String} text - AI response text
+ * @returns {Object|null} - Parsed JSON or null
+ */
+function extractJSON(text) {
+  // Try 1: Parse as-is (after cleaning markdown)
+  try {
+    const cleaned = text
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // Failed - try extracting JSON from text
+  }
+
+  // Try 2: Find JSON object in text
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (e) {
+    // Failed - try next method
+  }
+
+  // Try 3: Look for JSON between code blocks
+  try {
+    const codeBlockMatch = text.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+    if (codeBlockMatch) {
+      return JSON.parse(codeBlockMatch[1]);
+    }
+  } catch (e) {
+    // Failed
+  }
+
+  return null;
+}
+
+/**
+ * Create fallback food analysis from plain text response
+ * @param {String} text - AI's plain text response
+ * @returns {Object} - Structured food analysis
+ */
+function createFallbackAnalysis(text) {
+  return {
+    foodName: "Food Item",
+    visualDescription: text.slice(0, 200) || "Unable to analyze the image",
+    estimatedPortion: "Unknown",
+    nutrition: {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0
+    },
+    clarificationMessage: "The AI couldn't provide detailed nutrition info. Please provide more details about the food and portion size for accurate nutritional data."
+  };
+}
 
 /**
  * Build conversation context with smart truncation
@@ -95,6 +151,24 @@ const titleCache = new Map();
 function buildConversationContext(previousMessages, currentPrompt) {
   const messages = [];
 
+  // Helper to enrich message content with image/food context
+  const enrichMessageContent = (msg) => {
+    let content = msg.content;
+    
+    // If message has image context, append it
+    if (msg.type === 'image' && msg.imageUrl) {
+      content += `\n[User uploaded a food image]`;
+    }
+    
+    // If message has food analysis, append summary for context
+    if (msg.type === 'food_analysis' && msg.foodAnalysis) {
+      const fa = msg.foodAnalysis;
+      content += `\n[Previous analysis: ${fa.foodName}, ${fa.nutrition?.calories || 0} cal]`;
+    }
+    
+    return content;
+  };
+
   if (previousMessages.length === 0) {
     // First message in session - just add current prompt
     messages.push({
@@ -102,11 +176,11 @@ function buildConversationContext(previousMessages, currentPrompt) {
       content: currentPrompt,
     });
   } else if (previousMessages.length <= MAX_CONTEXT_MESSAGES) {
-    // All messages fit within limit - include everything
+    // All messages fit within limit - include everything with enriched context
     messages.push(
       ...previousMessages.map((msg) => ({
         role: msg.role,
-        content: msg.content,
+        content: enrichMessageContent(msg),
       })),
       {
         role: 'user',
@@ -122,7 +196,7 @@ function buildConversationContext(previousMessages, currentPrompt) {
 
     messages.push({
       role: firstUserMessage.role,
-      content: firstUserMessage.content,
+      content: enrichMessageContent(firstUserMessage),
     });
 
     messages.push({
@@ -133,7 +207,7 @@ function buildConversationContext(previousMessages, currentPrompt) {
     messages.push(
       ...recentMessages.map((msg) => ({
         role: msg.role,
-        content: msg.content,
+        content: enrichMessageContent(msg),
       })),
       {
         role: 'user',
@@ -213,15 +287,10 @@ function buildSystemPrompt(userProfile) {
   return `${basePrompt}\n\nCURRENT USER CONTEXT:\n\n${contextBody}\n\nUse this context to personalize all advice (e.g., calorie calculations).\nThis context updates dynamically as the user's profile changes.`;
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
  * Call OpenRouter chat completions API
  * @param {Array} messagesWithSystemPrompt - Messages including system prompt
  * @param {Object} [options]
- * @param {String} [options.model]
  * @param {Number} [options.timeoutMs]
  * @returns {Object} - { reply, raw }
  */
@@ -232,23 +301,19 @@ async function callOpenRouter(messagesWithSystemPrompt, options = {}) {
     );
   }
 
-  const model = options.model || OPENROUTER_MODEL;
   const timeout = options.timeoutMs || OPENROUTER_TIMEOUT_MS;
-  const isFallback = options.isFallback || false;
-  const attempt = options.attempt || 1;
 
   try {
     const response = await axios.post(
       `${OPENROUTER_BASE_URL}/chat/completions`,
       {
-        model,
+        model: OPENROUTER_MODEL,
         messages: messagesWithSystemPrompt,
         stream: false,
         ...OPENROUTER_GEN_PARAMS,
       },
       {
         timeout,
-        validateStatus: (status) => status < 500,
         headers: {
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
@@ -275,53 +340,18 @@ async function callOpenRouter(messagesWithSystemPrompt, options = {}) {
     };
   } catch (error) {
     const status = error.response?.status;
-    const transientStatus = [408, 500, 502, 503, 504, 524];
-    const isTimeout =
-      error.code === 'ETIMEDOUT' ||
-      error.code === 'ECONNABORTED' ||
-      error.message?.includes('timeout');
 
     if (status === 401) {
       throw new Error('OpenRouter authentication failed. Check your API key.');
-    }
-
-    if (status === 429 && !isFallback) {
-      console.warn(
-        `⚠️ OpenRouter rate limit on ${model}; falling back to ${OPENROUTER_FALLBACK_MODEL}`
-      );
-      return callOpenRouter(messagesWithSystemPrompt, {
-        model: OPENROUTER_FALLBACK_MODEL,
-        timeoutMs: timeout,
-        isFallback: true,
-        attempt,
-      });
-    }
-    if (status === 429 && !isFallback) {
-      throw new Error('OpenRouter rate limit reached. Please wait and try again.');
-    }
-
-    if ((status && transientStatus.includes(status)) || isTimeout) {
-      if (attempt < MAX_RETRIES) {
-        const delay = BACKOFF_BASE_MS * 2 ** (attempt - 1);
-        await sleep(delay);
-        return callOpenRouter(messagesWithSystemPrompt, {
-          model,
-          timeoutMs: timeout,
-          isFallback,
-          attempt: attempt + 1,
-        });
-      }
-    }
-
-    if (status === 429) {
-      throw new Error('OpenRouter rate limit reached. Please wait and try again.');
-    } else if (isTimeout) {
+    } else if (status === 429) {
+      throw new Error('AI rate limit reached. Please wait and try again.');
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
       throw new Error('AI request timed out. Please try again with a shorter prompt.');
     }
 
     console.error('OpenRouter call error:', error.message);
     console.error('Error response data:', error.response?.data);
-    throw error;
+    throw new Error(`AI failed: ${error.response?.data?.error?.message || error.message}`);
   }
 }
 
@@ -346,6 +376,143 @@ async function callLLM(conversationMessages, systemPrompt = DIET_ASSISTANT_SYSTE
     console.error('LLM call error:', error.message);
     console.error('Error response data:', error.response?.data);
     throw error;
+  }
+}
+
+/**
+ * Call OpenRouter Vision API for food image analysis with automatic fallback
+ * @param {String} imageUrl - URL of the image to analyze
+ * @param {String} systemPrompt - System prompt/instructions for the AI
+ * @param {String} userPrompt - User prompt text
+ * @param {Object} options - Additional options
+ * @returns {Object} - { reply, raw, modelUsed }
+ */
+async function callVisionAPI(imageUrl, systemPrompt, userPrompt, options = {}) {
+  const useFallback = options.useFallback || false;
+  const model = useFallback ? VISION_MODEL_FALLBACK : VISION_MODEL_PRIMARY;
+
+  try {
+    // Combine system prompt and user prompt for better compatibility
+    // Some providers don't support separate system messages
+    const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
+
+    const response = await axios.post(
+      `${OPENROUTER_BASE_URL}/chat/completions`,
+      {
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: combinedPrompt
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: imageUrl
+                }
+              }
+            ]
+          }
+        ],
+        temperature: 0.1, // Lower temperature for precise food recognition
+        max_tokens: 1000
+      },
+      {
+        timeout: OPENROUTER_TIMEOUT_MS,
+        validateStatus: (status) => status < 600, // Accept all responses for custom handling
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': OPENROUTER_REFERER,
+          'X-Title': OPENROUTER_TITLE
+        }
+      }
+    );
+
+    const data = response.data;
+    const status = response.status;
+
+    // Check for error responses
+    if (status >= 400) {
+      const errorMsg = data?.error?.message || `HTTP ${status} error`;
+      throw new Error(errorMsg);
+    }
+
+    const reply = data?.choices?.[0]?.message?.content ?? null;
+
+    if (!reply || (typeof reply === 'string' && reply.trim().length === 0)) {
+      console.error('Vision API response data:', JSON.stringify(data, null, 2));
+      throw new Error('Vision AI returned empty response');
+    }
+
+    // Blindness Guard: Check if model claims it can't see the image
+    const replyLower = typeof reply === 'string' ? reply.toLowerCase() : '';
+    const blindnessPhrases = [
+      "i can't see",
+      "i cannot see",
+      "text-only",
+      "unable to view",
+      "no image provided",
+      "cannot view images",
+      "i don't have the ability to see",
+      "as a text-based"
+    ];
+    
+    const isBlind = blindnessPhrases.some(phrase => replyLower.includes(phrase));
+    if (isBlind) {
+      console.error(`❌ Model claimed blindness: ${reply.slice(0, 100)}`);
+      throw new Error('Model claimed blindness - Retry with different provider');
+    }
+
+    console.log(`✅ Vision API success with model: ${model}`);
+
+    return {
+      reply: typeof reply === 'string' ? reply.trim() : String(reply).trim(),
+      raw: data,
+      modelUsed: model
+    };
+  } catch (error) {
+    const status = error.response?.status || 0;
+    const errorMsg = error.response?.data?.error?.message || error.message;
+
+    // Log the error
+    console.error(`❌ Vision API error (${model}):`, errorMsg);
+
+    // Handle specific errors
+    if (status === 401) {
+      throw new Error('OpenRouter authentication failed. Check your API key.');
+    }
+
+    if (status === 429) {
+      throw new Error('AI rate limit reached. Please try again in a moment.');
+    }
+
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+      throw new Error('AI request timed out. Please try again.');
+    }
+
+    // Retry with fallback model on server errors (500, 502, 503) OR blindness errors
+    if (!useFallback && (
+      status === 500 || 
+      status === 502 || 
+      status === 503 || 
+      errorMsg.includes('Provider returned error') ||
+      errorMsg.includes('Model claimed blindness')
+    )) {
+      console.warn(`⚠️ Retrying with fallback model: ${VISION_MODEL_FALLBACK}`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+      return callVisionAPI(imageUrl, systemPrompt, userPrompt, { useFallback: true });
+    }
+
+    // If fallback also failed or other errors
+    if (status === 502 || status === 503) {
+      throw new Error('AI is currently busy. Please try again in a moment.');
+    }
+
+    throw new Error(`Vision AI failed: ${errorMsg}`);
   }
 }
 
@@ -404,22 +571,26 @@ async function generateChatTitle(firstMessage, sessionId) {
 class AiController {
   /**
    * Send a chat message (create new session or continue existing)
+   * Supports both text messages and food image uploads
    * POST /v1/ai/chat
-   * Body: { userId, prompt, sessionId? }
+   * Body: { userId, prompt?, sessionId? } OR multipart/form-data with image
    */
   static async chat(req, res) {
     try {
       const { userId, prompt, sessionId } = req.body;
+      const hasImage = !!req.file;
 
       // Validation
       if (!userId) {
         return ResponseUtils.error(res, 'userId is required', 400);
       }
-      if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
-        return ResponseUtils.error(res, 'prompt is required and cannot be empty', 400);
+      
+      // Either prompt or image must be provided
+      if (!hasImage && (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0)) {
+        return ResponseUtils.error(res, 'Either prompt (text) or image file is required', 400);
       }
 
-      const trimmedPrompt = prompt.trim();
+      const trimmedPrompt = prompt ? prompt.trim() : '';
 
       // Simple per-user/session throttle
       const throttleKey = sessionId ? `session:${sessionId}` : `user:${userId}`;
@@ -454,13 +625,254 @@ class AiController {
         isNewSession = true;
       }
 
+      // =======================
+      // HANDLE IMAGE UPLOAD (Food Analysis)
+      // =======================
+      if (hasImage) {
+        const fileBuffer = req.file.buffer;
+        const fileName = req.file.originalname || `food_${Date.now()}`;
+
+        console.log(`📸 Processing food image: ${fileName} (${(req.file.size / 1024).toFixed(2)} KB)`);
+
+        // Upload image to ImgBB
+        let imgbbUrl;
+        try {
+          imgbbUrl = await imgbbService.uploadToImgBB(fileBuffer, fileName);
+          console.log(`✅ Image uploaded to ImgBB: ${imgbbUrl}`);
+        } catch (imgbbError) {
+          console.error('❌ ImgBB upload failed:', imgbbError.message);
+          return ResponseUtils.error(
+            res,
+            `Failed to upload image: ${imgbbError.message}`,
+            500
+          );
+        }
+
+        // Define food analysis system prompt with Chain of Thought (CoT) prompting
+        const FOOD_ANALYSIS_SYSTEM_PROMPT = `You are a professional food recognition and nutrition analysis AI.
+
+Your task is to analyze food images and provide detailed nutritional information.
+
+IMPORTANT: Use Chain of Thought reasoning. Think step-by-step before providing the final JSON.
+
+Step 1: Identify all visible ingredients
+Step 2: Analyze the composition and cooking method
+Step 3: Determine the accurate dish name
+Step 4: Output the JSON with your reasoning
+
+CRITICAL: You MUST respond with ONLY a valid JSON object. Do not include any markdown formatting, code blocks, or explanatory text.
+
+Response format (JSON only):
+{
+  "reasoning": "I see [describe all visible ingredients and composition here]. Based on this, the dish is...",
+  "foodName": "Name of the food item",
+  "visualDescription": "Brief description of what you see in the image",
+  "estimatedPortion": "Estimated portion size (e.g., '1 cup', '200g', '1 medium bowl')",
+  "nutrition": {
+    "calories": <number>,
+    "protein": <number in grams>,
+    "carbs": <number in grams>,
+    "fats": <number in grams>
+  },
+  "clarificationMessage": "A polite message asking the user to confirm the exact weight/portion for more accurate nutrition data"
+}
+
+Rules:
+1. ALWAYS include your reasoning in the "reasoning" field
+2. Identify ALL visible ingredients before naming the dish
+3. Provide realistic estimates based on visual appearance
+4. All nutrition values should be numbers (no strings)
+5. Be conservative with portion estimates
+6. If multiple food items are visible, analyze the dominant/main item
+7. If the image is unclear or not food, set foodName to "Unknown" and provide a helpful clarificationMessage`;
+
+        // Call Vision API with robust error handling
+        let analysisData;
+        let modelUsed;
+        try {
+          const { reply: aiReply, modelUsed: model } = await callVisionAPI(
+            imgbbUrl,
+            FOOD_ANALYSIS_SYSTEM_PROMPT,
+            `Analyze this food image and provide nutritional information in the specified JSON format.${trimmedPrompt ? ` User notes: ${trimmedPrompt}` : ''}`
+          );
+
+          modelUsed = model;
+          console.log(`🤖 Using model: ${modelUsed}`);
+
+          // Parse AI response with robust JSON extraction
+          analysisData = extractJSON(aiReply);
+
+          if (!analysisData) {
+            // AI didn't return JSON - log the response and create fallback
+            console.warn('⚠️ AI returned non-JSON response:', aiReply.slice(0, 100));
+            analysisData = createFallbackAnalysis(aiReply);
+          }
+
+          // Validate and set defaults if fields are missing
+          if (!analysisData.foodName) {
+            analysisData.foodName = "Food Item";
+          }
+          if (!analysisData.nutrition) {
+            analysisData.nutrition = {
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fats: 0
+            };
+          }
+          if (!analysisData.visualDescription) {
+            analysisData.visualDescription = "Unable to provide a detailed description";
+          }
+          if (!analysisData.estimatedPortion) {
+            analysisData.estimatedPortion = "Unknown";
+          }
+          if (!analysisData.clarificationMessage) {
+            analysisData.clarificationMessage = "Please provide more details about the food and portion size for accurate nutritional data.";
+          }
+
+          console.log(`✅ Food analysis completed: ${analysisData.foodName}`);
+        } catch (aiError) {
+          console.error('❌ AI analysis failed:', aiError.message);
+          
+          // Provide user-friendly error messages
+          const errorMsg = aiError.message?.toLowerCase() || '';
+          
+          if (errorMsg.includes('currently busy') || errorMsg.includes('502') || errorMsg.includes('503')) {
+            return ResponseUtils.error(
+              res,
+              'AI is currently busy. Please try again in a moment.',
+              503
+            );
+          } else if (errorMsg.includes('rate limit') || errorMsg.includes('429')) {
+            return ResponseUtils.error(
+              res,
+              'AI rate limit reached. Please wait a moment and try again.',
+              429
+            );
+          } else if (errorMsg.includes('timeout')) {
+            return ResponseUtils.error(
+              res,
+              'AI request timed out. Please try again.',
+              504
+            );
+          } else if (errorMsg.includes('authentication')) {
+            return ResponseUtils.error(
+              res,
+              'AI authentication error. Please contact support.',
+              503
+            );
+          }
+          
+          // Generic error
+          return ResponseUtils.error(
+            res,
+            'Unable to analyze image at the moment. Please try again.',
+            500
+          );
+        }
+
+        // Create friendly response message
+        const friendlyResponse = `I can see this is **${analysisData.foodName}**! 🍽️
+
+${analysisData.visualDescription}
+
+**Estimated Portion:** ${analysisData.estimatedPortion}
+
+**Nutritional Information (approximate):**
+- 🔥 Calories: ${analysisData.nutrition.calories} kcal
+- 💪 Protein: ${analysisData.nutrition.protein}g
+- 🍚 Carbs: ${analysisData.nutrition.carbs}g
+- 🥑 Fats: ${analysisData.nutrition.fats}g
+
+${analysisData.clarificationMessage}`;
+
+        // Save user message (with image)
+        const userMessage = await AiChatMessage.create({
+          sessionId: session._id,
+          role: 'user',
+          type: 'image',
+          content: trimmedPrompt || 'Uploaded a food image',
+          imageUrl: imgbbUrl,
+        });
+
+        // Save assistant message (with analysis data)
+        const assistantMessage = await AiChatMessage.create({
+          sessionId: session._id,
+          role: 'assistant',
+          type: 'food_analysis',
+          content: friendlyResponse,
+          imageUrl: imgbbUrl,
+          foodAnalysis: {
+            foodName: analysisData.foodName,
+            visualDescription: analysisData.visualDescription || '',
+            estimatedPortion: analysisData.estimatedPortion || 'Unknown',
+            nutrition: {
+              calories: Number(analysisData.nutrition.calories) || 0,
+              protein: Number(analysisData.nutrition.protein) || 0,
+              carbs: Number(analysisData.nutrition.carbs) || 0,
+              fats: Number(analysisData.nutrition.fats) || 0,
+            },
+            clarificationMessage: analysisData.clarificationMessage || '',
+          },
+          modelUsed,
+        });
+
+        // Update session
+        session.lastMessageAt = new Date();
+        await session.save();
+
+        // Generate title for new sessions
+        if (isNewSession && !session.titleGenerated) {
+          const titlePrompt = `Food Image: ${analysisData.foodName}`;
+          generateChatTitle(titlePrompt, session._id)
+            .then(async (title) => {
+              const sessionToUpdate = await AiChatSession.findById(session._id);
+              if (sessionToUpdate && !sessionToUpdate.titleGenerated) {
+                sessionToUpdate.title = title;
+                sessionToUpdate.titleGenerated = true;
+                await sessionToUpdate.save();
+                console.log(`✅ Generated title for session ${session._id}: "${title}"`);
+              }
+            })
+            .catch((err) => console.error('❌ Title generation failed:', err.message));
+        }
+
+        // Return response
+        return ResponseUtils.success(res, 'Food image analyzed successfully', {
+          sessionId: session._id,
+          reply: assistantMessage.content,
+          userMessage: {
+            id: userMessage._id,
+            type: userMessage.type,
+            content: userMessage.content,
+            imageUrl: userMessage.imageUrl,
+            createdAt: userMessage.createdAt,
+          },
+          assistantMessage: {
+            id: assistantMessage._id,
+            type: assistantMessage.type,
+            content: assistantMessage.content,
+            imageUrl: assistantMessage.imageUrl,
+            foodAnalysis: assistantMessage.foodAnalysis,
+            modelUsed: assistantMessage.modelUsed,
+            createdAt: assistantMessage.createdAt,
+          },
+          isNewSession,
+        });
+      }
+
+      // =======================
+      // HANDLE TEXT MESSAGE (Normal Chat)
+      // =======================
+      
       // Fetch previous messages from this session (excluding system messages)
+      // IMPORTANT: Include imageUrl and foodAnalysis for context continuity
       const previousMessages = await AiChatMessage.find({
         sessionId: session._id,
         role: { $in: ['user', 'assistant'] }, // Only user/assistant, NOT system
       })
         .sort({ createdAt: 1 })
-        .select('role content')
+        .select('role content type imageUrl foodAnalysis')
         .lean();
       // Fetch user profile for persistent context
       const user = await User.findById(userId);
@@ -483,6 +895,7 @@ class AiController {
       const userMessage = await AiChatMessage.create({
         sessionId: session._id,
         role: 'user',
+        type: 'text',
         content: trimmedPrompt,
       });
 
@@ -490,6 +903,7 @@ class AiController {
       const assistantMessage = await AiChatMessage.create({
         sessionId: session._id,
         role: 'assistant',
+        type: 'text',
         content: reply,
       });
 
@@ -640,7 +1054,7 @@ class AiController {
         role: { $in: ['user', 'assistant'] },
       })
         .sort({ createdAt: 1 })
-        .select('role content createdAt')
+        .select('role content type imageUrl foodAnalysis modelUsed createdAt')
         .lean();
 
       return ResponseUtils.success(res, 'Messages retrieved successfully', {
@@ -652,7 +1066,11 @@ class AiController {
         messages: messages.map((msg) => ({
           id: msg._id,
           role: msg.role,
+          type: msg.type || 'text',
           content: msg.content,
+          imageUrl: msg.imageUrl || null,
+          foodAnalysis: msg.foodAnalysis || null,
+          modelUsed: msg.modelUsed || null,
           createdAt: msg.createdAt,
         })),
       });
@@ -694,6 +1112,7 @@ class AiController {
       return ResponseUtils.internalError(res, 'Failed to delete chat session');
     }
   }
+
 }
 
 module.exports = AiController;
