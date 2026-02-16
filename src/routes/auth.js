@@ -94,6 +94,8 @@ const router = express.Router();
  *             required:
  *               - email
  *               - password
+ *               - name
+ *               - username
  *             properties:
  *               email:
  *                 type: string
@@ -103,6 +105,14 @@ const router = express.Router();
  *                 type: string
  *                 minLength: 6
  *                 example: mypassword123
+ *               name:
+ *                 type: string
+ *                 description: Full name
+ *                 example: Jane Doe
+ *               username:
+ *                 type: string
+ *                 description: Username (letters and numbers, min 3 characters)
+ *                 example: janedoe
  *     responses:
  *       201:
  *         description: User created successfully

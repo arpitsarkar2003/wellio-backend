@@ -24,7 +24,7 @@ class AuthController {
         return ResponseUtils.validationError(res, ValidationUtils.formatValidationErrors(error));
       }
 
-      const { email, password, name, username, firstName, lastName } = req.body;
+      const { email, password, name, username } = req.body;
       const sanitizedEmail = ValidationUtils.sanitizeEmail(email);
 
       // Check if user already exists
@@ -48,14 +48,12 @@ class AuthController {
       // Hash password using SHA-256 as requested
       const hashedPassword = PasswordUtils.hashPasswordSHA256(password);
 
-      // Create new user
+      // Create new user (full name + username only)
       const newUser = new User({
         email: sanitizedEmail,
         password: hashedPassword,
-        name,
-        username,
-        firstName,
-        lastName
+        name: name?.trim(),
+        username: username?.trim()
       });
 
       await newUser.save();

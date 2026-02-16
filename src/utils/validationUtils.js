@@ -48,15 +48,19 @@ class ValidationUtils {
       'any.required': 'Google token is required'
     });
 
-  // Signup validation
+  // Signup validation (full name + username only; no first/last name)
   static validateSignup(data) {
     const schema = Joi.object({
       email: this.emailSchema,
       password: this.passwordSchema,
-      name: Joi.string().required(),
-      username: Joi.string().required(),
-      firstName: Joi.string().required(),
-      lastName: Joi.string().required()
+      name: Joi.string().trim().required().messages({
+        'any.required': 'Full name is required',
+        'string.empty': 'Full name cannot be empty'
+      }),
+      username: Joi.string().required().messages({
+        'any.required': 'Username is required',
+        'string.empty': 'Username cannot be empty'
+      })
     });
 
     return schema.validate(data, { abortEarly: false });

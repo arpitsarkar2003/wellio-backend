@@ -1,0 +1,154 @@
+Wellio Backend API Endpoints
+============================
+
+Base URL: https://wellio-backend.vercel.app/
+
+General
+-------
+GET /
+    - Welcome message
+GET /v1
+    - API v1 info
+GET /health
+    - Health check
+GET /api-docs
+    - Swagger documentation
+
+Authentication (/v1/auth)
+-------------------------
+POST /v1/auth/signup
+    - User registration
+    - Body: { email, password }
+POST /v1/auth/login
+    - User login (sends OTP)
+    - Body: { email, password }
+POST /v1/auth/verify-otp
+    - Verify OTP and complete login
+    - Body: { token, otp }
+POST /v1/auth/google-login
+    - Google OAuth login
+    - Body: { googleToken }
+POST /v1/auth/logout
+    - User logout
+    - Headers: Authorization: Bearer <token>
+DELETE /v1/auth/delete-account
+    - Delete user account
+    - Headers: Authorization: Bearer <token>
+POST /v1/auth/refresh-token
+    - Refresh access token
+    - Headers: Authorization: Bearer <token> (Refresh token)
+GET /v1/auth/profile
+    - Get user profile
+    - Headers: Authorization: Bearer <token>
+
+User (/v1/user)
+---------------
+GET /v1/user/profile
+    - Get user profile
+    - Headers: Authorization: Bearer <token>
+PUT /v1/user/profile
+    - Update user profile
+    - Headers: Authorization: Bearer <token>
+    - Body: { phoneNumber, address, physicalInfo, ... }
+GET /v1/user/:id
+    - Get user by ID
+    - Headers: Authorization: Bearer <token>
+POST /v1/user/forgot-password
+    - Request password reset
+    - Body: { email }
+POST /v1/user/reset-password
+    - Reset password with token
+    - Body: { resetToken, newPassword }
+DELETE /v1/user/account
+    - Delete user account
+    - Headers: Authorization: Bearer <token>
+    - Body: { password }
+
+Admin (/v1/admin)
+-----------------
+POST /v1/admin/setup
+    - Create initial super admin (One-time setup)
+    - Body: { username, email, password, securityAnswer }
+POST /v1/admin/login
+    - Super admin login
+    - Body: { username, password }
+POST /v1/admin/security-question
+    - Get security question
+    - Body: { username }
+POST /v1/admin/recover-password
+    - Recover password
+    - Body: { username, securityAnswer, newPassword }
+GET /v1/admin/profile
+    - Get admin profile
+    - Headers: Authorization: Bearer <token>
+PUT /v1/admin/change-password
+    - Change admin password
+    - Headers: Authorization: Bearer <token>
+    - Body: { currentPassword, newPassword }
+POST /v1/admin/logout
+    - Admin logout
+    - Headers: Authorization: Bearer <token>
+GET /v1/admin/sessions
+    - Get active sessions
+    - Headers: Authorization: Bearer <token>
+DELETE /v1/admin/sessions/:sessionId
+    - Revoke session
+    - Headers: Authorization: Bearer <token>
+GET /v1/admin/company
+    - Get company info
+    - Headers: Authorization: Bearer <token>
+PUT /v1/admin/company
+    - Update company info
+    - Headers: Authorization: Bearer <token>
+    - Body: { name, address, contactInfo, ... }
+POST /v1/admin/company/logo
+    - Upload company logo
+    - Headers: Authorization: Bearer <token>
+    - Body: { base64Image, imageName }
+DELETE /v1/admin/company/logo
+    - Remove company logo
+    - Headers: Authorization: Bearer <token>
+POST /v1/admin/company/logo/info
+    - Get logo info
+    - Headers: Authorization: Bearer <token>
+POST /v1/admin/company/phone
+    - Add phone number
+    - Headers: Authorization: Bearer <token>
+POST /v1/admin/company/email
+    - Add email
+    - Headers: Authorization: Bearer <token>
+GET /v1/admin/policy
+    - Get all policies
+    - Headers: Authorization: Bearer <token>
+POST /v1/admin/policy/privacy-policy
+    - Upload Privacy Policy
+    - Headers: Authorization: Bearer <token>
+    - Body: { title, content, ... }
+POST /v1/admin/policy/terms-conditions
+    - Upload Terms & Conditions
+    - Headers: Authorization: Bearer <token>
+    - Body: { title, content, ... }
+GET /v1/admin/policy/stats
+    - Get policy stats
+    - Headers: Authorization: Bearer <token>
+GET /v1/admin/policy/:id
+    - Get policy by ID
+    - Headers: Authorization: Bearer <token>
+PATCH /v1/admin/policy/:id/status
+    - Update policy status
+    - Headers: Authorization: Bearer <token>
+DELETE /v1/admin/policy/:id
+    - Delete policy
+    - Headers: Authorization: Bearer <token>
+
+Policy (/v1/policy)
+-------------------
+GET /v1/policy/privacy-policy
+    - Get current privacy policy (Public)
+GET /v1/policy/terms-conditions
+    - Get current terms & conditions (Public)
+
+Company (/v1/company)
+---------------------
+GET /v1/company
+    - Get company information (Public)
