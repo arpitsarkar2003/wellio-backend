@@ -15,7 +15,10 @@
     "type": "git",
     "url": "git+https://github.com/arpitsarkar2003/diet-tracker-backend.git"
   },
-  "keywords": [],
+  "keywords": ["express", "mongodb", "api", "backend", "diet-tracker", "wellio"],
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "author": "",
   "license": "ISC",
   "bugs": {

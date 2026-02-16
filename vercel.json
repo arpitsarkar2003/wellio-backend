@@ -6,25 +6,10 @@
       "use": "@vercel/node"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api-docs/(.*)",
-      "destination": "/index.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.js"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api-docs/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
-        }
-      ]
+      "src": "/(.*)",
+      "dest": "index.js"
     }
   ],
   "env": {
